@@ -82,7 +82,7 @@ def setup():
 
     hub = PrimeHub(broadcast_channel=blt.TX_CABECA,
                    observe_channels=[blt.TX_BRACO, blt.TX_RABO],
-                   front_side=Axis.X, top_side=-Axis.Z)
+                   front_side=Axis.X, top_side=Axis.Z)
     hub.system.set_stop_button(Button.CENTER)
     globais.init(hub, TESTE, DEBUG, nome="cabeça")
 
