@@ -82,7 +82,7 @@ def setup():
 
     hub = PrimeHub(broadcast_channel=blt.TX_CABECA,
                    observe_channels=[blt.TX_BRACO, blt.TX_RABO],
-                   front_side=Axis.X, top_side=-Axis.Z)
+                   front_side=Axis.X, top_side=Axis.Z)
     hub.system.set_stop_button(Button.CENTER)
     globais.init(hub, TESTE, DEBUG, nome="cabeça")
 
@@ -258,7 +258,18 @@ def test():
             dar_ré(DIST_VERDE_CAÇAMBA)
         return
 
-    if True: main()
+    if True:
+        LOG("tenta verde:")
+        achar_não_verde()
+
+        LOG("tenta alinhar:")
+        bipes.separador()
+        alinhar()
+
+        LOG("vira direita:")
+        bipes.separador()
+        virar_direita()
+        # main()
 
     LOG("fim do teste")
 
@@ -528,6 +539,7 @@ def alinha_parede(vel, vel_ang, giro_max=45,
     alinhado_pista  = lambda esq, dir: func_cor_pista(esq) and func_cor_pista(dir)
     alinhado_parede = lambda esq, dir: alinhado_não_pista(esq, dir) and not desalinhado_branco(esq, dir)
 
+    LOG("alinha_parede")
     with mudar_velocidade(vel, vel_ang):
         parou, extra = andar_até_idx(func_parar_andar, dist_max=TAM_BLOCO)
         if not parou:
@@ -589,6 +601,7 @@ def alinhar(max_tentativas=4, virar=True, #! virar=False?
         rodas.reset()
 
         alinhou, extra = alinha_parede(vel, vel_ang, giro_max=giro_max)
+        LOG("alinhar", extra)
         ang  = rodas.angle()
         dist = rodas.distance()
         if alinhou: return extra
