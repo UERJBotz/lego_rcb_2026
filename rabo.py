@@ -59,12 +59,13 @@ def setup():
 
 def main(hub):
     global timer
-
     while True:
         if uart.any():
-            cor = ord(uart.read(1))
+            id, leitura = read_sensor()
+            LOG("id: ", id, "leitura: ", leitura)
+            '''cor = ord(uart.read(1))
             hub.ble.broadcast((blt.rsp.cor_caçamba, cor))
-            LOG(Cor(cor))
+            LOG(Cor(cor))'''
 
         if (millis() - timer) > 1000:
             timer = millis()
@@ -76,6 +77,16 @@ def main(hub):
             #comando, *args = comando
         else: continue
 
+def read_sensor():
+    inicio = b'\xaa'
+    dado = uart.read(1)
+    if dado != inicio:
+        LOG("tá lendo: ", dado)
+        return None, None
+    else:
+        dados = uart.read(2)
+        LOG("tá lendo: ", dados)
+        return dados[0], dados[1]
 
 if __name__ == "__main__":
     while True:

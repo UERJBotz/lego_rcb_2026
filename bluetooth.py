@@ -1,9 +1,12 @@
 from comum import globais
+from comum import LOG, ASSERT
 
 from lib.polyfill import Enum
-from cores import Cor
+try: #!
+    from cores import Cor
+except ImportError:
+    LOG("IHH.... sem Cor...")
 
-from comum import ASSERT
 
 SILENCIOSO = False
 
