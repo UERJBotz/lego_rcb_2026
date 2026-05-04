@@ -6,14 +6,14 @@
 Adafruit_TCS34725 tcs(TCS34725_INTEGRATIONTIME_300MS, TCS34725_GAIN_1X);
 
 enum Cor {
-  NENHUMA = 0,
+  NENHUMA,
   PRETO,
   AZUL,
   VERDE,
   AMARELO,
   VERMELHO,
   BRANCO,
-  MARROM,
+  MARROM
 };
 
 void rgbToHsv(int r, int g, int b, int &h, int &s, int &v) {
