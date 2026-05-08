@@ -42,6 +42,8 @@ rsp = Enum("rsp", [
     "mostrei_cor",
 ])
 
+#! mudar alguns nomes depois
+
 def enviar_mensagem(*msg, enum):
     if not SILENCIOSO: print(f"enviar_mensagem: {enum(msg[0])}{msg[1:]}")
     globais.ble.broadcast(tuple(msg))
@@ -91,7 +93,7 @@ def abaixar_garra():
     return esperar_resposta(rsp.abaixei)
 
 def ver_cor_cubo():
-    #enviar_comando(cmd.ver_cor_sensor_rabo)
+    enviar_comando(cmd.ver_cor_sensor_rabo)
     return Cor(cor=esperar_resposta(rsp.cor_sensor_rabo, canal=TX_RABO))
 
 def ver_hsv_cubo():
@@ -99,7 +101,7 @@ def ver_hsv_cubo():
 
 def ver_cor_caçamba():
     enviar_comando(cmd.ver_cor_sensor_braco)
-    return Cor(cor=esperar_resposta(rsp.cor_sensor_braco))
+    return Cor(cor=esperar_resposta(rsp.cor_sensor_braco, canal=TX_RABO))
 
 def ver_dist_caçamba():
     enviar_comando(cmd.ver_dist_sensor_braco)

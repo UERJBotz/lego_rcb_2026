@@ -59,23 +59,36 @@ def setup():
 
 def main(hub):
     global timer
+
+    cmd = None
+    cor_caçamba = cor_garra = 0
     while True:
         if uart.any():
             leitura = read_sensor()
-            if leitura:
-                id, valor = leitura
-                LOG("id: ", id, "valor: ", Cor(valor))
-            hub.ble.broadcast((blt.rsp.cor_caçamba, valor))
+            if not leitura: continue
+
+            id, valor = leitura
+            LOG("id: ", id, "valor: ", Cor(valor)) #! vai ter que mudar pro ultra
+            if   id == 0: cor_garra   = valor
+            elif id == 1: cor_caçamba = valor
 
         if (millis() - timer) > 1000:
             timer = millis()
             led.toggle()
 
-        comando = hub.ble.observe(blt.TX_CABECA)
-        if comando is not None:
-            LOG(comando)
-            #comando, *args = comando
+        antes, cmd = cmd, hub.ble.observe(blt.TX_CABECA)
+        if cmd is not None: #! levar isso em consideração
+            comando, *args = cmd
         else: continue
+
+        if cmd != antes:
+            LOG(f"{blt.cmd(comando)}{args}")
+
+        if   comando == blt.cmd.ver_cor_sensor_braco: #! nomes
+            blt.enviar_comando(blt.rsp.cor_sensor_braco, cor_caçamba) #!
+        elif comando == blt.cmd.ver_cor_sensor_rabo: #!
+            blt.enviar_comando(blt.rsp.cor_sensor_rabo, cor_garra) #!
+
 
 def read_sensor():
     inicio = b'\xaa'
