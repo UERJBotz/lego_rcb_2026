@@ -259,17 +259,7 @@ def test():
         return
 
     if True:
-        LOG("tenta verde:")
-        achar_não_verde()
-
-        LOG("tenta alinhar:")
-        bipes.separador()
-        alinhar()
-
-        LOG("vira direita:")
-        bipes.separador()
-        virar_direita()
-        # main()
+        main()
 
     LOG("fim do teste")
 

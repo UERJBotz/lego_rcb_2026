@@ -81,16 +81,30 @@ void setup(void) {
 }
 
 void loop(){
-  Ev3ColorResult color = sensor.read();
-  send_cor(0, color.cor);
+  uint8_t sensor_atual = 0;
+  while (Serial.available()) {
+    int req = Serial.read();
+    sensor_atual = req < 0 ? sensor_atual
+                 : req;
+  }
 
-  uint16_t r, g, b, c;
-  tcs.getRawData(&r, &g, &b, &c);
+  //switch (sensor_atual) {
+  //  case 0: {
+        Ev3ColorResult color = sensor.read();
+        send_cor(0, color.color);
+  //  } break;
 
-  int h, s, v;
-  rgbToHsv(r, g, b, h, s, v);
+  //  case 1: {
+        uint16_t r, g, b, c;
+        tcs.getRawData(&r, &g, &b, &c);
 
-  Cor cor = classificarCor(h, s, v);
-  send_cor(1, cor);
+        int h, s, v;
+        rgbToHsv(r, g, b, h, s, v);
+
+        Cor cor = classificarCor(h, s, v);
+        send_cor(1, cor);
+  //  } break;
+  //}
+
   delay(50);
  }
