@@ -116,10 +116,11 @@ def main():
 
     blt.SILENCIOSO = True
     luzes.inicial()
+    blt.mostrar_cor(Cor(Color.GREEN))
 
     while True:
         LOG("main: resetou", conta_reset, "vezes")
-        blt.resetar_garra()
+        blt.resetar_garra_baixo()
         blt.abaixar_garra()
         posicionamento_inicial()
         pos_estimada = (0,0)
@@ -170,9 +171,9 @@ def main():
 def test():
     global orientação_estimada, pos_estimada, na_grade, cores_caçambas
     ... # testar coisas aqui sem mudar o resto do código
-    blt.SILENCIOSO = True
-    
-    while False:
+    blt.SILENCIOSO = False
+
+    while True:
         cor = blt.ver_cor_cubo()
         print(cor)
         blt.mostrar_cor(cor)

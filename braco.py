@@ -3,6 +3,7 @@ from pybricks.hubs import PrimeHub
 from pybricks.pupdevices import Motor, ColorSensor, UltrasonicSensor
 from pybricks.parameters import Port, Button, Color, Direction, Side
 from pybricks.tools      import wait, StopWatch
+
 from cores import Cor
 from comum import globais, bipes, luzes
 from comum import LOG, ERRO, ASSERT
