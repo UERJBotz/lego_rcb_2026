@@ -26,9 +26,9 @@ from comum import LOG, ERRO, ASSERT
 NUM_CUBOS_PEGÁVEIS = 2
 
 ANG_LIMIAR_GARRA_FECHADA = 145
-VEL_ALINHAR = 80
+VEL_ALINHAR = 90
 VEL_ANG_ALINHAR = 20
-GIRO_MAX_ALINHAR = 90 #70
+GIRO_MAX_ALINHAR = 110 #70
 
 TAM_QUARTEIRÃO = 300
 TAM_BLOCO = TAM_QUARTEIRÃO//2
@@ -107,6 +107,37 @@ def setup():
     vels_padrão    = vel_padrão, vel_ang_padrão
 
     return hub
+
+####################################################
+
+def verificar_cubo():
+    ang = blt.fechar_garra()
+    cor = blt.ver_cor_cubo()
+    if ang > ANG_LIMIAR_GARRA_FECHADA or cor == Cor.enum.NENHUMA:
+        LOG("verifica_cubo: cel livre fechou tudo")
+        return None
+    else:
+        LOG(f"verifica_cubo: cel com cubo {cor}")
+        return cor
+
+def verificar_quarteirão():
+    DIST_VER_CUBO = DIST_CRUZAMENTO_CUBO + DIST_EIXO_SENSOR
+    andar_dist_linha(DIST_VER_CUBO)
+
+    cubo = verificar_cubo()
+    if cubo: return cubo, 1
+
+    achar_cruzamento_linha(dist_max=TAM_QUARTEIRÃO-DIST_CRUZAMENTO_CUBO+10)
+    andar_dist_linha(TAM_FAIXA)
+
+    return None, 2 #! Cor.enum.NENHUMA?
+
+def ir_primeira_coluna():
+    achar_cruzamento_linha(dist_max=TAM_QUARTEIRÃO)
+    y, x = 0, 1
+    curva_linha_direita()
+
+####################################################
 
 quarteirão_atual = 0
 def main():
@@ -945,9 +976,11 @@ def descobrir_cor_caçambas():
     acertar_orientação("S")
 
     #gambiarra ver o 1 com cor incerta
-    pid_caçamba = pid(kp=0.5)
-    andar_dist_linha(DIST_ALINHO, vel=20, pid=pid_caçamba)
-    andar_dist_linha(DIST_BORDA_CAÇAMBA - DIST_ALINHO, pid=pid_caçamba)
+    pid_caçamba = pid(kp=1.0)
+    dir_linha.mul = dir_linha.DIR
+    andar_dist_linha(DIST_ALINHO, vel=150, pid=pid_caçamba)
+    andar_dist_linha(DIST_BORDA_CAÇAMBA - DIST_ALINHO, vel=150, pid=pid_caçamba)
+    dir_linha.mul = dir_linha.DIR
 
     for i in range(NUM_CAÇAMBAS):
         cores_caçambas[i] = blt.ver_cor_caçamba()
