@@ -2,7 +2,10 @@
 #include <math.h>
 #include "Adafruit_TCS34725.h"
 #include "Ev3ColorSensor.h"
+#include "NewPing.h"
 
+// NewPing(trig, echo, max_dist)
+NewPing sonar(9, 10, 127);
 Ev3ColorSensor sensor(8, 7);
 
 // Initialise with specific int time and gain values
@@ -60,11 +63,11 @@ int normalizar(int valor, int min, int max) {
   return constrain(v, 0, 255);
 }
 
-void send_cor(uint8_t id, uint8_t cor){
+void send_valor(uint8_t id, uint8_t valor){
   const uint8_t inicio = 0xAA;
   Serial.write(inicio);
   Serial.write(id);
-  Serial.write(cor);
+  Serial.write(valor);
 }
 
 void setup(void) {
@@ -81,17 +84,23 @@ void setup(void) {
 }
 
 void loop(){
-  uint8_t sensor_atual = 0;
+  uint8_t sensor_atual = 255;
+  uint8_t valor = 0;
   while (Serial.available()) {
     int req = Serial.read();
+    // sensor atual deveria ser global pra manter o sensor atual
+    // Só enviar se receber requisição, ou toda hora???
     sensor_atual = req < 0 ? sensor_atual
                  : req;
+
+    // colocar o switch aqui atenderia todas as requisições uma a uma
+    // colocar fora
   }
 
   //switch (sensor_atual) {
   //  case 0: {
         Ev3ColorResult color = sensor.read();
-        send_cor(0, color.color);
+        valor = color.color;
   //  } break;
 
   //  case 1: {
@@ -101,10 +110,21 @@ void loop(){
         int h, s, v;
         rgbToHsv(r, g, b, h, s, v);
 
-        Cor cor = classificarCor(h, s, v);
-        send_cor(1, cor);
+        valor = (uint8_t)classificarCor(h, s, v);
+  //  } break;
+
+  //  case 1: {
+        unsigned int us = sonar.ping_median(5);
+        valor = (uint8_t)sonar.convert_cm(us);
   //  } break;
   //}
+
+  // Só envia se receber algo do serial no while loop de antes
+  // OBS: se o objetivo é enviar independente de receber requisição,
+  // então isso que fiz não tem sentido
+  if (sensor_atual < 255) {
+    send_valor(sensor_atual, valor);
+  }
 
   delay(50);
  }
