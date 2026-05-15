@@ -17,7 +17,7 @@ import garra
 
 def setup():
     global garra_fechada, garra_levantada, garra_altura_sensor
-    global sensor_cor_frente, sensor_dist_dir
+    global sensor_dist_dir
 
     garra_levantada = False
     garra_fechada   = False
@@ -31,7 +31,6 @@ def setup():
     globais.motor_garra    = Motor(Port.B, Direction.COUNTERCLOCKWISE)
     globais.motor_vertical = Motor(Port.A, Direction.COUNTERCLOCKWISE)
 
-    #sensor_cor_frente = ColorSensor(Port.D)
     sensor_dist_dir = UltrasonicSensor(Port.E)
 
     LOG("ligando arduino")
@@ -90,19 +89,6 @@ def main():
                 garra.levanta_garra_dist_sensor()
                 garra_altura_sensor = True
             blt.enviar_comando(blt.rsp.levantei_dist_sensor)
-
-        #elif comando == blt.cmd.ver_cor_sensor_braco: #! isso é uma gambiarrinha, devia tar em Cor
-        #    cor = sensor_cor_frente.color()
-        #    cor = cores.Color2cor(cor)
-        #    hsv = sensor_cor_frente.hsv()
-        #    if   cor == cores.cor.NENHUMA:
-        #        cor = cores.identificar(hsv, sensor="frente")#"chao")
-        #    elif cor == cores.cor.VERMELHO:
-        #        cor = cores.identificar(hsv, sensor="frente")
-        #    blt.enviar_comando(blt.rsp.cor_sensor_braco, cor)
-        #elif comando == blt.cmd.ver_hsv_sensor_braco:
-        #    cor = sensor_cor_frente.hsv()
-        #    blt.enviar_comando(blt.rsp.hsv_sensor_braco, *cores.Color2tuple(cor))
 
         elif comando == blt.cmd.ver_dist_sensor_braco:
             dist = sensor_dist_dir.distance()
@@ -171,9 +157,9 @@ if __name__ == "__main__":
       except RuntimeError as e:
         LOG(f"runtime error {e}")
         continue
-      #except UnicodeError as e:
-      #  LOG(f"unicode error {e}")
-      #  continue
+      except UnicodeError as e:
+        LOG(f"unicode error {e}")
+        continue
       except Exception as e:
         if DEBUG: raise e
         else:
