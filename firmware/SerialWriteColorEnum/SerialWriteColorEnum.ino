@@ -4,12 +4,12 @@
 #include "Ev3ColorSensor.h"
 #include "NewPing.h"
 
-// NewPing(trig, echo, max_dist)
-NewPing sonar(9, 10, 127);
-Ev3ColorSensor sensor(8, 7);
+#define MAX_DIST 127
 
-// Initialise with specific int time and gain values
 Adafruit_TCS34725 tcs(TCS34725_INTEGRATIONTIME_300MS, TCS34725_GAIN_1X);
+
+NewPing sonar(9, 10, MAX_DIST);
+Ev3ColorSensor sensor(8, 7);
 
 enum Cor {
   NENHUMA,
@@ -63,67 +63,53 @@ int normalizar(int valor, int min, int max) {
   return constrain(v, 0, 255);
 }
 
-void send_valor(uint8_t id, uint8_t valor){
+void mandar_u8(uint8_t id, uint8_t valor){
   const uint8_t inicio = 0xAA;
   Serial.write(inicio);
-  Serial.write(id);
-  Serial.write(valor);
+  Serial.write(id); Serial.write(valor);
 }
 
 void setup(void) {
   Serial.begin(115200);
   sensor.begin();
 
-  // Initiate TCS3472 IC
   if (tcs.begin()) {
-    Serial.println("Found TCS3472 sensor");
+    Serial.println("Sensor de cor TCS34725 encontrado");
   } else {
-    Serial.println("No TCS34725 found ... check your connections");
-    while (1);
+    Serial.println("Sensor de cor TCS34725 não encontrado... espero que não seja durante a partida");
+    //! ASSERT(False);
   }
 }
 
 void loop(){
-  uint8_t sensor_atual = 255;
-  uint8_t valor = 0;
+  static uint8_t sensor_atual = 0xFF;
   while (Serial.available()) {
     int req = Serial.read();
-    // sensor atual deveria ser global pra manter o sensor atual
-    // Só enviar se receber requisição, ou toda hora???
     sensor_atual = req < 0 ? sensor_atual
                  : req;
-
-    // colocar o switch aqui atenderia todas as requisições uma a uma
-    // colocar fora
   }
 
-  //switch (sensor_atual) {
-  //  case 0: {
+  switch (sensor_atual) {
+    case 0xFF:
+    case 0: {
         Ev3ColorResult color = sensor.read();
-        valor = color.color;
-  //  } break;
+        mandar_u8(sensor_atual, color.color);
+    } if (sensor_atual != 0xFF) break;
 
-  //  case 1: {
+    case 1: {
         uint16_t r, g, b, c;
         tcs.getRawData(&r, &g, &b, &c);
 
         int h, s, v;
         rgbToHsv(r, g, b, h, s, v);
 
-        valor = (uint8_t)classificarCor(h, s, v);
-  //  } break;
+        mandar_u8(sensor_atual, classificarCor(h, s, v));
+    } if (sensor_atual != 0xFF) break;
 
-  //  case 1: {
+    case 2: {
         unsigned int us = sonar.ping_median(5);
-        valor = (uint8_t)sonar.convert_cm(us);
-  //  } break;
-  //}
-
-  // Só envia se receber algo do serial no while loop de antes
-  // OBS: se o objetivo é enviar independente de receber requisição,
-  // então isso que fiz não tem sentido
-  if (sensor_atual < 255) {
-    send_valor(sensor_atual, valor);
+        mandar_u8(sensor_atual, sonar.convert_cm(us));
+    } if (sensor_atual != 0xFF) break;
   }
 
   delay(50);
