@@ -92,7 +92,7 @@ mostrar_cor = função_comando(
 )
 
 ver_cor_cubo = função_comando(
-    cmd.mostrar_cor, rsp.mostrei_cor, canal=TX_RABO,
+    cmd.ver_cor_sensor_rabo, rsp.cor_sensor_rabo, canal=TX_RABO,
     pre_retorno=cor2Cor,
 )
 
