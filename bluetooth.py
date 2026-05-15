@@ -67,42 +67,49 @@ def esperar_resposta(esperado, canal=TX_BRACO, espera=None, coalesce=True):
     return args
 
 
-def nada(*a): return a
-def cor2Cor(resp, *_): return Cor(cor=resp)
-def Cor2cor(args, *_): return args.cor
-def função_comando(comando, resposta, pre_envio=nada, pre_retorno=nada, canal=TX_BRACO):
+def igual(*a): return a
+def primeiro(*a): return a[0] if a else []
+def Cor2cor(a, *_): return a.cor
+def cor2Cor(a, *_): return Cor(cor=a)
+def fabricar_comando(comando, resposta, pre_envio=igual,
+                                pre_retorno=primeiro,
+                                canal=TX_BRACO):
     def enviar_e_receber(*args, espera=None, **kwargs):
-        enviar_comando(comando, *pre_envio(*args))
+        envio = pre_envio(*args)
+        try:              enviar_comando(comando, *envio)
+        except TypeError: enviar_comando(comando,  envio)
         return pre_retorno(
-            *esperar_resposta(resposta, espera=espera, canal=canal, coalesce=False, **kwargs)
+            *esperar_resposta(resposta, espera=espera,
+                              canal=canal, coalesce=False,
+                              **kwargs)
         )
     return enviar_e_receber
 
-fechar_garra = função_comando(cmd.fecha_garra, rsp.fechei)
-abrir_garra  = função_comando(cmd.abre_garra, rsp.abri)
+fechar_garra = fabricar_comando(cmd.fecha_garra, rsp.fechei)
+abrir_garra  = fabricar_comando(cmd.abre_garra, rsp.abri)
 
-levantar_garra = função_comando(cmd.levanta_garra, rsp.levantei)
-abaixar_garra  = função_comando(cmd.abaixa_garra, rsp.abaixei)
+levantar_garra = fabricar_comando(cmd.levanta_garra, rsp.levantei)
+abaixar_garra  = fabricar_comando(cmd.abaixa_garra, rsp.abaixei)
 
-ver_dist_caçamba = função_comando(cmd.ver_dist_sensor_braco, rsp.dist_sensor_braco)
+ver_dist_caçamba = fabricar_comando(cmd.ver_dist_sensor_braco, rsp.dist_sensor_braco)
 
-mostrar_cor = função_comando(
+mostrar_cor = fabricar_comando(
     cmd.mostrar_cor, rsp.mostrei_cor,
     pre_envio=Cor2cor,
 )
 
-ver_cor_cubo = função_comando(
-    cmd.ver_cor_sensor_rabo, rsp.cor_sensor_rabo, canal=TX_RABO,
-    pre_retorno=cor2Cor,
+ver_cor_cubo = fabricar_comando(
+    cmd.ver_cor_sensor_rabo, rsp.cor_sensor_rabo,
+    pre_retorno=cor2Cor, canal=TX_RABO,
 )
 
-ver_cor_caçamba = função_comando(
+ver_cor_caçamba = fabricar_comando(
     cmd.ver_cor_sensor_braco, rsp.cor_sensor_braco,
-    pre_retorno=cor2Cor,
+    pre_retorno=cor2Cor#, canal=TX_RABO,
 )
 
 def ver_hsv_cubo():
-    return ASSERT(False, "o sensor do rabo não consegue ler hsv")
+    return ASSERT(False, "o sensor de ev3 do rabo não consegue ler hsv")
 
 
 def resetar_garra(): resetar_garra_cima()
