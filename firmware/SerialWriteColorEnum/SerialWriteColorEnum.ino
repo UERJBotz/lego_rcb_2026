@@ -2,11 +2,14 @@
 #include <math.h>
 #include "Adafruit_TCS34725.h"
 #include "Ev3ColorSensor.h"
+#include "NewPing.h"
 
-Ev3ColorSensor sensor(8, 7);
+#define MAX_DIST 127
 
-// Initialise with specific int time and gain values
 Adafruit_TCS34725 tcs(TCS34725_INTEGRATIONTIME_300MS, TCS34725_GAIN_1X);
+
+NewPing sonar(9, 10, MAX_DIST);
+Ev3ColorSensor sensor(8, 7);
 
 enum Cor {
   NENHUMA,
@@ -60,51 +63,54 @@ int normalizar(int valor, int min, int max) {
   return constrain(v, 0, 255);
 }
 
-void send_cor(uint8_t id, uint8_t cor){
+void mandar_u8(uint8_t id, uint8_t valor){
   const uint8_t inicio = 0xAA;
   Serial.write(inicio);
-  Serial.write(id);
-  Serial.write(cor);
+  Serial.write(id); Serial.write(valor);
 }
 
 void setup(void) {
   Serial.begin(115200);
   sensor.begin();
 
-  // Initiate TCS3472 IC
   if (tcs.begin()) {
-    Serial.println("Found TCS3472 sensor");
+    Serial.println("Sensor de cor TCS34725 encontrado");
   } else {
-    Serial.println("No TCS34725 found ... check your connections");
-    while (1);
+    Serial.println("Sensor de cor TCS34725 não encontrado... espero que não seja durante a partida");
+    //! ASSERT(False);
   }
 }
 
 void loop(){
-  uint8_t sensor_atual = 0;
+  static uint8_t sensor_atual = 0xFF;
   while (Serial.available()) {
     int req = Serial.read();
     sensor_atual = req < 0 ? sensor_atual
                  : req;
   }
 
-  //switch (sensor_atual) {
-  //  case 0: {
+  switch (sensor_atual) {
+    case 0xFF:
+    case 0: {
         Ev3ColorResult color = sensor.read();
-        send_cor(0, color.color);
-  //  } break;
+        mandar_u8(0, color.color);
+    } if (sensor_atual != 0xFF) break;
 
-  //  case 1: {
+    case 1: {
         uint16_t r, g, b, c;
         tcs.getRawData(&r, &g, &b, &c);
 
         int h, s, v;
         rgbToHsv(r, g, b, h, s, v);
 
-        Cor cor = classificarCor(h, s, v);
-        send_cor(1, cor);
-  //  } break;
-  //}
+        mandar_u8(1, classificarCor(h, s, v));
+    } if (sensor_atual != 0xFF) break;
+
+    case 2: {
+        unsigned int us = sonar.ping_median(5);
+        mandar_u8(2, sonar.convert_cm(us));
+    } if (sensor_atual != 0xFF) break;
+  }
 
   delay(50);
  }
