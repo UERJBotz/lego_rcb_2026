@@ -93,7 +93,7 @@ void loop(){
     case 0xFF:
     case 0: {
         Ev3ColorResult color = sensor.read();
-        mandar_u8(sensor_atual, color.color);
+        mandar_u8(0, color.color);
     } if (sensor_atual != 0xFF) break;
 
     case 1: {
@@ -103,12 +103,12 @@ void loop(){
         int h, s, v;
         rgbToHsv(r, g, b, h, s, v);
 
-        mandar_u8(sensor_atual, classificarCor(h, s, v));
+        mandar_u8(1, classificarCor(h, s, v));
     } if (sensor_atual != 0xFF) break;
 
     case 2: {
         unsigned int us = sonar.ping_median(5);
-        mandar_u8(sensor_atual, sonar.convert_cm(us));
+        mandar_u8(2, sonar.convert_cm(us));
     } if (sensor_atual != 0xFF) break;
   }
 
