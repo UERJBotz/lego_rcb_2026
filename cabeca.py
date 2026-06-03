@@ -28,7 +28,7 @@ NUM_CUBOS_PEGÁVEIS = 2
 ANG_LIMIAR_GARRA_FECHADA = 145
 VEL_ALINHAR = 80
 VEL_ANG_ALINHAR = 20
-GIRO_MAX_ALINHAR = 90 #70
+GIRO_MAX_ALINHAR = 90
 
 TAM_QUARTEIRÃO = 300
 TAM_BLOCO = TAM_QUARTEIRÃO//2
@@ -201,20 +201,29 @@ def test():
     if False: testes.imprimir_cor_cubo_para_sempre()
     if False: testes.imprimir_cor_caçamba_para_sempre()
 
+    while True:
+        for _ in range(3):
+            andar_dist_linha(TAM_QUARTEIRÃO)
+            bipes.separador()
+        curva_linha_esquerda()
+        achar_cruzamento_linha()
+        bipes.separador()
+        curva_linha_esquerda()
+
     while False:
         if True: vel = None
         else:    vel, *_ = rodas.settings()
 
         for _ in range(5):
-            achar_cruzamento_linha(vel)
+            achar_cruzamento_linha()
             bipes.separador()
             curva_linha_esquerda()
 
-        achar_cruzamento_linha(vel)
+        achar_cruzamento_linha()
         bipes.separador()
         curva_linha_esquerda()
 
-        achar_cruzamento_linha(vel)
+        achar_cruzamento_linha()
         bipes.separador()
         curva_linha_direita()
 
@@ -437,8 +446,24 @@ def achar_não_verde_alinhado(*args, **kwargs):
     dar_ré(TAM_FAIXA) #!//2?
     return alinhar(*args, **kwargs)
 
+ultimo_preto_esq = -69
+ultimo_preto_dir = -69
 def até_cruzamento(dist, esq, centro, dir, preto):
-    return preto(esq) and preto(dir)
+    global ultimo_preto_esq, ultimo_preto_dir
+    if preto(esq) and preto(dir): return True
+
+    if preto(esq): ultimo_preto_esq = dist
+    if preto(dir): ultimo_preto_dir = dist
+    janela = 2
+
+    esquerda_viu_preto = (dist - ultimo_preto_esq) <= janela
+    direita_viu_preto  = (dist - ultimo_preto_dir) <= janela
+
+    if esquerda_viu_preto and direita_viu_preto:
+        ultimo_preto_esq = -69
+        ultimo_preto_dir = -69
+        return True
+    return False
 
 def até_dist_max(dist_max):
     def func(dist, esq, centro, dir, preto):
