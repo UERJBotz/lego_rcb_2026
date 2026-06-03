@@ -201,15 +201,6 @@ def test():
     if False: testes.imprimir_cor_cubo_para_sempre()
     if False: testes.imprimir_cor_caçamba_para_sempre()
 
-    while True:
-        for _ in range(3):
-            andar_dist_linha(TAM_QUARTEIRÃO)
-            bipes.separador()
-        curva_linha_esquerda()
-        achar_cruzamento_linha()
-        bipes.separador()
-        curva_linha_esquerda()
-
     while False:
         if True: vel = None
         else:    vel, *_ = rodas.settings()
@@ -226,6 +217,20 @@ def test():
         achar_cruzamento_linha()
         bipes.separador()
         curva_linha_direita()
+
+    while False:
+        contador = 0
+
+        for _ in range(5):
+            achar_cruzamento_linha()
+            luzes.mostrar(Color.BLUE)
+            contador += 1
+
+            andar_dist_linha(TAM_BLOCO)
+            luzes.mostrar(Color.RED)
+
+            LOG("cruzamentos: ", contador)
+
 
     if False: tira_obstaculo((0,2))
     if False: tira_obstaculo((0,4))
@@ -446,24 +451,8 @@ def achar_não_verde_alinhado(*args, **kwargs):
     dar_ré(TAM_FAIXA) #!//2?
     return alinhar(*args, **kwargs)
 
-ultimo_preto_esq = -69
-ultimo_preto_dir = -69
 def até_cruzamento(dist, esq, centro, dir, preto):
-    global ultimo_preto_esq, ultimo_preto_dir
-    if preto(esq) and preto(dir): return True
-
-    if preto(esq): ultimo_preto_esq = dist
-    if preto(dir): ultimo_preto_dir = dist
-    janela = 2
-
-    esquerda_viu_preto = (dist - ultimo_preto_esq) <= janela
-    direita_viu_preto  = (dist - ultimo_preto_dir) <= janela
-
-    if esquerda_viu_preto and direita_viu_preto:
-        ultimo_preto_esq = -69
-        ultimo_preto_dir = -69
-        return True
-    return False
+    return preto(esq) and preto(dir)
 
 def até_dist_max(dist_max):
     def func(dist, esq, centro, dir, preto):
@@ -507,7 +496,7 @@ def pid(kp, kd=0, ki=0):
 
 pid_linha = pid(kp=0.50)
 def seguir_linha_até(parada=até_dist_max_ou_cruzamento(TAM_PISTA_TODA),
-                     *, vel=None, pid=None, parar_no_verde=True):
+                     *, vel=None, pid=None, parar_no_verde=False):
     if vel is None: vel = VEL_SEGUIR_LINHA
     if pid is None: pid = pid_linha
 
@@ -527,7 +516,7 @@ def seguir_linha_até(parada=até_dist_max_ou_cruzamento(TAM_PISTA_TODA),
         rodas.drive(vel, pid(erro))
 
         if parada(rodas.distance(), esq, centro, dir, preto): break
-        if parar_no_verde:
+        if parar_no_verde: #! isso era o erro do bipe eterno, ver se precisa
             esq, dir = cores.todas(sensor_cor_esq, sensor_cor_dir)
             if esq == Cor.enum.VERDE    and dir == Cor.enum.VERDE: break
             if esq == Cor.enum.VERMELHO and dir == Cor.enum.VERMELHO: break #! parar no vermelho
@@ -853,8 +842,8 @@ def varredura(pos_estimada, caçambas):
             luzes.mostrar(cor.color) #! fzr printar em braco
             break
 
-        achar_cruzamento_linha(dist_max=TAM_QUARTEIRÃO-DIST_CRUZAMENTO_CUBO+10)
-        andar_dist_linha(TAM_FAIXA)
+        achar_cruzamento_linha()#dist_max=TAM_QUARTEIRÃO-DIST_CRUZAMENTO_CUBO+10)
+        andar_dist_linha(TAM_FAIXA*2) #TAM_FAIXA)
         x += 1 #! para procura genérico, considerar orientação
     else:
         cor = None
