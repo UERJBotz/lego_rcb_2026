@@ -28,7 +28,7 @@ NUM_CUBOS_PEGÁVEIS = 2
 ANG_LIMIAR_GARRA_FECHADA = 145
 VEL_ALINHAR = 80
 VEL_ANG_ALINHAR = 20
-GIRO_MAX_ALINHAR = 90 #70
+GIRO_MAX_ALINHAR = 90
 
 TAM_QUARTEIRÃO = 300
 TAM_BLOCO = TAM_QUARTEIRÃO//2
@@ -202,21 +202,35 @@ def test():
     if False: testes.imprimir_cor_caçamba_para_sempre()
 
     while False:
-        if True: vel = None
+        if True: vel = 50 # mudar quando testar
         else:    vel, *_ = rodas.settings()
 
         for _ in range(5):
-            achar_cruzamento_linha(vel)
+            achar_cruzamento_linha(vel=vel)
             bipes.separador()
             curva_linha_esquerda()
 
-        achar_cruzamento_linha(vel)
+        achar_cruzamento_linha(vel=vel)
         bipes.separador()
         curva_linha_esquerda()
 
-        achar_cruzamento_linha(vel)
+        achar_cruzamento_linha(vel=vel)
         bipes.separador()
         curva_linha_direita()
+
+    while False:
+        contador = 0
+
+        for _ in range(5):
+            achar_cruzamento_linha()
+            luzes.mostrar(Color.BLUE)
+            contador += 1
+
+            andar_dist_linha(TAM_BLOCO)
+            luzes.mostrar(Color.RED)
+
+            LOG("cruzamentos: ", contador)
+
 
     if False: tira_obstaculo((0,2))
     if False: tira_obstaculo((0,4))
@@ -482,7 +496,7 @@ def pid(kp, kd=0, ki=0):
 
 pid_linha = pid(kp=0.50)
 def seguir_linha_até(parada=até_dist_max_ou_cruzamento(TAM_PISTA_TODA),
-                     *, vel=None, pid=None, parar_no_verde=True):
+                     *, vel=None, pid=None, parar_no_verde=False):
     if vel is None: vel = VEL_SEGUIR_LINHA
     if pid is None: pid = pid_linha
 
@@ -502,7 +516,7 @@ def seguir_linha_até(parada=até_dist_max_ou_cruzamento(TAM_PISTA_TODA),
         rodas.drive(vel, pid(erro))
 
         if parada(rodas.distance(), esq, centro, dir, preto): break
-        if parar_no_verde:
+        if parar_no_verde: #! isso era o erro do bipe eterno, ver se precisa
             esq, dir = cores.todas(sensor_cor_esq, sensor_cor_dir)
             if esq == Cor.enum.VERDE    and dir == Cor.enum.VERDE: break
             if esq == Cor.enum.VERMELHO and dir == Cor.enum.VERMELHO: break #! parar no vermelho
