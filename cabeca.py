@@ -202,19 +202,19 @@ def test():
     if False: testes.imprimir_cor_caçamba_para_sempre()
 
     while False:
-        if True: vel = None
+        if True: vel = 50 # mudar quando testar
         else:    vel, *_ = rodas.settings()
 
         for _ in range(5):
-            achar_cruzamento_linha()
+            achar_cruzamento_linha(vel=vel)
             bipes.separador()
             curva_linha_esquerda()
 
-        achar_cruzamento_linha()
+        achar_cruzamento_linha(vel=vel)
         bipes.separador()
         curva_linha_esquerda()
 
-        achar_cruzamento_linha()
+        achar_cruzamento_linha(vel=vel)
         bipes.separador()
         curva_linha_direita()
 
@@ -842,8 +842,8 @@ def varredura(pos_estimada, caçambas):
             luzes.mostrar(cor.color) #! fzr printar em braco
             break
 
-        achar_cruzamento_linha()#dist_max=TAM_QUARTEIRÃO-DIST_CRUZAMENTO_CUBO+10)
-        andar_dist_linha(TAM_FAIXA*2) #TAM_FAIXA)
+        achar_cruzamento_linha(dist_max=TAM_QUARTEIRÃO-DIST_CRUZAMENTO_CUBO+10)
+        andar_dist_linha(TAM_FAIXA)
         x += 1 #! para procura genérico, considerar orientação
     else:
         cor = None
