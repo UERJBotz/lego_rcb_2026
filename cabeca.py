@@ -522,8 +522,7 @@ def viu_cor_dupla(*args):
 
 pid_linha = pid(kp=0.50)
 def seguir_linha_até(bom=até_dist_max_ou_cruzamento(TAM_PISTA_TODA),
-                     ruim=viu_cor_dupla(Cor.enum.VERMELHO),
-                     *, vel=None, pid=None):
+                     ruim=None, *, vel=None, pid=None):
     if vel is None: vel = VEL_SEGUIR_LINHA
     if pid is None: pid = pid_linha
 
