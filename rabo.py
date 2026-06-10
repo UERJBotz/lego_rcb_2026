@@ -85,9 +85,9 @@ def main(hub):
             LOG(f"{blt.cmd(comando)}{args}")
 
         if   comando == blt.cmd.ver_cor_sensor_braco: #! nomes
-            blt.enviar_comando(blt.rsp.cor_sensor_braco, cor_caçamba) #!
+            blt.enviar_resposta(blt.rsp.cor_sensor_braco, cor_caçamba) #!
         elif comando == blt.cmd.ver_cor_sensor_rabo: #!
-            blt.enviar_comando(blt.rsp.cor_sensor_rabo, cor_garra) #!
+            blt.enviar_resposta(blt.rsp.cor_sensor_rabo, cor_garra) #!
 
 
 def read_sensor():
