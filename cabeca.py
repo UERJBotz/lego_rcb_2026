@@ -171,7 +171,7 @@ def test():
     global orientação_estimada, pos_estimada, na_grade, cores_caçambas
     ... # testar coisas aqui sem mudar o resto do código
     blt.SILENCIOSO = True
-    
+
     while False:
         cor = blt.ver_cor_cubo()
         print(cor)
@@ -513,6 +513,8 @@ def seguir_linha_até(parada=até_dist_max_ou_cruzamento(TAM_PISTA_TODA),
         dir    = sensor_cor_dir.reflection()
 
         erro = dir_linha.mul * (REFL_IDEAL - centro)
+        if preto(esq) and preto(dir): erro = 0
+
         rodas.drive(vel, pid(erro))
 
         if parada(rodas.distance(), esq, centro, dir, preto): break
