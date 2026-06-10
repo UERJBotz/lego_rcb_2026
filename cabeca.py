@@ -23,6 +23,10 @@ from comum import globais, bipes, luzes
 from comum import LOG, ERRO, ASSERT
 
 
+BOTÃO_PAUSA    = Button.CENTER
+BOTÃO_CONTINUA = Button.CENTER
+BOTÕES_DESLIGA = {Button.LEFT}
+
 NUM_CUBOS_PEGÁVEIS = 2
 
 ANG_LIMIAR_GARRA_FECHADA = 145
@@ -83,7 +87,7 @@ def setup():
     hub = PrimeHub(broadcast_channel=blt.TX_CABECA,
                    observe_channels=[blt.TX_BRACO, blt.TX_RABO],
                    front_side=Axis.X, top_side=Axis.Z)
-    hub.system.set_stop_button(Button.CENTER)
+    hub.system.set_stop_button(BOTÃO_PAUSA)
     globais.init(hub, TESTE, DEBUG, nome="cabeça")
 
     orientação_estimada = ""
@@ -171,7 +175,7 @@ def test():
     global orientação_estimada, pos_estimada, na_grade, cores_caçambas
     ... # testar coisas aqui sem mudar o resto do código
     blt.SILENCIOSO = True
-    
+
     while False:
         cor = blt.ver_cor_cubo()
         print(cor)
@@ -539,7 +543,7 @@ def alinha_parede(vel, vel_ang, giro_max=45,
     desalinhado_branco = lambda esq, dir: Cor.branco(esq) ^ Cor.branco(dir)
     alinhado_não_pista = lambda esq, dir: ((not func_cor_pista(esq)) and
                                            (not func_cor_pista(dir)))
-    
+
     alinhado_pista  = lambda esq, dir: func_cor_pista(esq) and func_cor_pista(dir)
     alinhado_parede = lambda esq, dir: alinhado_não_pista(esq, dir) and not desalinhado_branco(esq, dir)
 
@@ -550,7 +554,7 @@ def alinha_parede(vel, vel_ang, giro_max=45,
             (dist,) = extra
             LOG(f"alinha_parede: reto pista {dist}")
             return False, extra # viu só branco, não sabemos se tá alinhado
-    
+
         (esq, dir) = extra
         if  alinhado_parede(esq, dir):
             LOG(f"alinha_parede: reto não pista {esq}, {dir}")
@@ -989,7 +993,7 @@ def descobrir_cor_caçambas():
     rodas.turn(10)
     dar_ré(TAM_BLOCO//4)
     rodas.turn(-20)
-   
+
 class testes:
     @staticmethod
     def imprimir_cor_caçamba_para_sempre():
@@ -1037,6 +1041,7 @@ if __name__ == "__main__":
         except SystemExit:
             hub.system.set_stop_button(None)
             LOG("pedindo parada")
+
             rodas.reset()
             luzes.reset()
             bipes.cabeca()
@@ -1046,10 +1051,13 @@ if __name__ == "__main__":
 
             wait(300)
             bots = set()
-            while Button.CENTER not in bots:
+            while BOTÃO_CONTINUA not in bots:
                 bots = hub.buttons.pressed()
-                if Button.LEFT  in bots: pass
-                if Button.RIGHT in bots: pass
+                if BOTÕES_DESLIGA <= bots:
+                    raise SystemExit
+
+                if Button.RIGHT     in bots: pass
+                if Button.BLUETOOTH in bots: pass
 
             LOG("reiniciando")
             hub.system.set_stop_button(Button.CENTER)
