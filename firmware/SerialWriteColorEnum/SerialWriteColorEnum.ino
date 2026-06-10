@@ -63,10 +63,14 @@ int normalizar(int valor, int min, int max) {
   return constrain(v, 0, 255);
 }
 
-void mandar_u8(uint8_t id, uint8_t valor){
+void mandar_u8(uint8_t id, uint8_t valor) {
   const uint8_t inicio = 0xAA;
   Serial.write(inicio);
   Serial.write(id); Serial.write(valor);
+  #if 0
+    Serial.print(id); Serial.print(" ");
+    Serial.println(valor);
+  #endif
 }
 
 void setup(void) {
