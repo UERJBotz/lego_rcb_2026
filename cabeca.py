@@ -234,8 +234,9 @@ def test():
     if False: testes.ver_cores_caçambas_até_vermelho()
 
     while False:
-        if True: vel = 50 # mudar quando testar
-        else:    vel, *_ = rodas.settings()
+        if False: vel = 70 # mudar pra testar
+        else:
+            vel, *_ = rodas.settings()
 
         for _ in range(5):
             achar_cruzamento_linha(vel=vel)
@@ -262,7 +263,6 @@ def test():
             luzes.mostrar(Color.RED)
 
             LOG("cruzamentos: ", contador)
-
 
     while False:
         caca = blt.ver_dist_caçamba()
@@ -563,8 +563,9 @@ def dar_ré_linha(dist, vel=70, **kwargs):
                      ruim=None, vel=-vel, **kwargs)
     dir_linha.mul = -dir_linha.mul
 
-def dar_ré_achar_cruzamento_linha(*, dist_max=TAM_PISTA_TODA, **kwargs):
-    seguir_linha_até(até_dist_max_ou_cruzamento(dist_max), vel=-70, **kwargs) #! vel hardcoded
+def dar_ré_achar_cruzamento_linha(*, vel=70, dist_max=TAM_PISTA_TODA, **kwargs):
+    seguir_linha_até(até_dist_max_ou_cruzamento(dist_max),
+                     vel=-vel, **kwargs)
 
 def andar_dist_linha(dist, **kwargs):
     return seguir_linha_até(até_dist_max(dist), **kwargs)
@@ -635,14 +636,14 @@ def girar_orientação(passos):
     i = cardinais.index(orientação_estimada)
     orientação_estimada = cardinais[(i + passos) % 4]
 
-def curva_linha_esquerda():
+def curva_linha_esquerda(raio=DIST_EIXO_SENSOR):
     dir_linha.mul = dir_linha.DIR
-    rodas.curve(DIST_EIXO_SENSOR, -90)
+    rodas.curve(raio, -90)
     girar_orientação(-1)
 
-def curva_linha_direita():
+def curva_linha_direita(raio=DIST_EIXO_SENSOR):
     dir_linha.mul = dir_linha.ESQ
-    rodas.curve(DIST_EIXO_SENSOR, +90)
+    rodas.curve(raio, +90)
     girar_orientação(+1)
 
 
