@@ -199,7 +199,7 @@ def test():
         print(ang)
 
     if False: testes.imprimir_cor_cubo_para_sempre()
-    if False: testes.imprimir_cor_caçamba_para_sempre()
+    if True: testes.imprimir_cor_caçamba_para_sempre()
 
     while False:
         if True: vel = 50 # mudar quando testar

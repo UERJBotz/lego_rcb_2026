@@ -19,6 +19,8 @@ Cor = Enum("Cor", ["NENHUMA",
                    "BRANCO",
                    "MARROM"])
 
+cor_caçamba = cor_garra = 0
+
 class Led(Pin):
     def __init__(self, pin):
         super().__init__(pin, Pin.OUT)
@@ -58,20 +60,10 @@ def setup():
     return hub
 
 def main(hub):
-    global timer
+    global timer, cor_caçamba, cor_garra
 
     cmd = None
-    cor_caçamba = cor_garra = 0
     while True:
-        if uart.any():
-            leitura = read_sensor()
-            if not leitura: continue
-
-            id, valor = leitura
-            LOG("id: ", id, "valor: ", Cor(valor)) #! vai ter que mudar pro ultra
-            if   id == 0: cor_garra   = valor
-            elif id == 1: cor_caçamba = valor
-
         if (millis() - timer) > 1000:
             timer = millis()
             led.toggle()
@@ -85,16 +77,36 @@ def main(hub):
             LOG(f"{blt.cmd(comando)}{args}")
 
         if   comando == blt.cmd.ver_cor_sensor_braco: #! nomes
+            uart.write(b'\x01')
+            LOG("Pedido enviado cor caçamba")
+            esperar_leitura()
             blt.enviar_comando(blt.rsp.cor_sensor_braco, cor_caçamba) #!
         elif comando == blt.cmd.ver_cor_sensor_rabo: #!
+            uart.write(b'\x00')
+            LOG("Pedido enviado cor garra")
+            esperar_leitura()
             blt.enviar_comando(blt.rsp.cor_sensor_rabo, cor_garra) #!
 
 
-def read_sensor():
+def ler_sensor():
     inicio = b'\xaa'
     if uart.read(1) != inicio:
         return None
     else: return uart.read(2)
+
+def esperar_leitura():
+    global cor_garra, cor_caçamba
+    while True:
+        if uart.any():
+            LOG(uart.any())
+            leitura = ler_sensor()
+            if not leitura: continue
+
+            id, valor = leitura
+            LOG("id: ", id, "valor: ", Cor(valor))#!vai ter que mudar pro ultra
+            if   id == 0: cor_garra   = valor
+            elif id == 1: cor_caçamba = valor
+            return
 
 if __name__ == "__main__":
     while True:
