@@ -200,6 +200,9 @@ def test():
 
     if False: testes.imprimir_cor_cubo_para_sempre()
     if False: testes.imprimir_cor_caçamba_para_sempre()
+    if True:
+        blt.resetar_garra()
+        testes.checar_caçamba_para_sempre()
 
     while False:
         if True: vel = 50 # mudar quando testar
@@ -239,7 +242,7 @@ def test():
     if False: tira_obstaculo((3,3))
     if False: tira_obstaculo((4,4))
 
-    if True:
+    if False:
         cores_caçambas = [
             Cor.enum.NENHUMA for _ in range(NUM_CAÇAMBAS)
         ]
@@ -949,6 +952,22 @@ def procura(pos_estimada, cores_caçambas):
 
     SucessoOuCatástrofe("sem caminhos possíveis")
 
+def checar_cor_caçamba(num_vezes=9, espera=200):
+    contagens = [0 for i in range(len(Cor.enum))]
+
+    for i in range(num_vezes):
+        wait(espera)
+        cor = blt.ver_cor_cubo().cor
+        contagens[cor] += 1
+    
+    print(contagens, end="")
+    cor_moda = 0
+    for i in range(len(contagens)):
+        if contagens[cor_moda] < contagens[i]:
+            cor_moda = i
+
+    return Cor(cor=cor_moda)
+
 def descobrir_cor_caçambas():
     global cores_caçambas
     if not cores_caçambas:
@@ -969,11 +988,10 @@ def descobrir_cor_caçambas():
 
     for i in range(NUM_CAÇAMBAS):
         acertar_orientação("O")
-        rodas.straight(DIST_VERDE_CAÇAMBA - DIST_VOLTAR_CUBO - 1)
-        wait(1000)
-        cores_caçambas[i] = blt.ver_cor_caçamba()
+        rodas.straight(DIST_VERDE_CAÇAMBA - DIST_EIXO_SENSOR)
+        cores_caçambas[i] = checar_cor_caçamba()
         bipes.cabeca()
-        dar_ré(DIST_VERDE_CAÇAMBA - DIST_VOLTAR_CUBO - 1)
+        dar_ré(DIST_VERDE_CAÇAMBA - DIST_EIXO_SENSOR)
         acertar_orientação("S")
         dist = blt.ver_dist_caçamba()
 
@@ -1002,6 +1020,12 @@ class testes:
         while True:
             cor = blt.ver_cor_caçamba()
             print(cor)
+
+    @staticmethod
+    def checar_caçamba_para_sempre():
+        while True:
+            cor = checar_cor_caçamba()
+            print(cor, cor.cor)
 
     @staticmethod
     def imprimir_dist_caçamba_pra_sempre():
