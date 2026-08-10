@@ -960,6 +960,7 @@ def descobrir_cor_caçambas():
     achar_não_verde_alinhado()
     rodas.straight(DIST_SENSORES_CENTRO)
     acertar_orientação("S")
+    blt.abrir_garra()
 
     #gambiarra ver o 1 com cor incerta
     pid_caçamba = pid(kp=0.5)
@@ -967,19 +968,24 @@ def descobrir_cor_caçambas():
     andar_dist_linha(DIST_BORDA_CAÇAMBA - DIST_ALINHO, pid=pid_caçamba)
 
     for i in range(NUM_CAÇAMBAS):
+        acertar_orientação("O")
+        rodas.straight(DIST_VERDE_CAÇAMBA - DIST_VOLTAR_CUBO - 1)
+        wait(1000)
         cores_caçambas[i] = blt.ver_cor_caçamba()
         bipes.cabeca()
+        dar_ré(DIST_VERDE_CAÇAMBA - DIST_VOLTAR_CUBO - 1)
+        acertar_orientação("S")
         dist = blt.ver_dist_caçamba()
 
         #! rataria cores caçambas
-        if cores_caçambas[i].cor == Cor.enum.MARROM:
-            cores_caçambas[i] = Cor(cor=Cor.enum.AMARELO)
+        #if cores_caçambas[i].cor == Cor.enum.MARROM:
+        #    cores_caçambas[i] = Cor(cor=Cor.enum.AMARELO)
         #if cores_caçambas[i].cor == Cor.enum.PRETO:
         #    if False: cores_caçambas[i] = Cor(cor=Cor.enum.AZUL)
         #    else:    cores_caçambas[i] = Cor(cor=Cor.enum.VERDE)
-        if cores_caçambas[i].cor == Cor.enum.NENHUMA:
-            if dist < TAM_QUARTEIRÃO:
-                cores_caçambas[i] = Cor(cor=Cor.enum.PRETO)
+        #if cores_caçambas[i].cor == Cor.enum.NENHUMA:
+        #    if dist < TAM_QUARTEIRÃO:
+        #        cores_caçambas[i] = Cor(cor=Cor.enum.PRETO)
 
         LOG(f"descobrir_cor_caçamba: caçamba {cores_caçambas[i]} a {dist/10}cm")
 
