@@ -1,6 +1,6 @@
 from machine import Pin, SoftI2C
-from lib.polyfill import rgb_to_hsv
-from lib.cores import Cor
+from cores import Cor, cor
+import math
 
 class TCS34725:
     MUX_ADDR = 0x70  # Endereço do TCA9548A
@@ -35,20 +35,55 @@ class TCS34725:
         red   = self._read_word(self.CDATAL + 2)
         green = self._read_word(self.CDATAL + 4)
         blue  = self._read_word(self.CDATAL + 6)
-        return red, green, blue, clear 
+        return (red, green, blue, clear) 
     
-    def rgbc_to_rgb255(red, green, blue, clear):
-        if clear > 0:
-            r_255 = int((red / clear) * 255)
-            g_255 = int((green / clear) * 255)
-            b_255 = int((blue / clear) * 255)
+    @staticmethod
+    def rgbc_to_hsv(rgbc: tuple):
+        r, g, b, c = rgbc
+        if c == 0:
+            return (0, 0, 0)
+
+        r, g, b = r/c, g/c, b/c
+
+        cmax = max(r, g, b)
+        cmin = min(r, g, b)
+        delta = cmax - cmin
+
+        if delta == 0:
+            h = 0
+        elif cmax == r:
+            h = 60 * (((g - b) / delta) % 6)
+        elif cmax == g:
+            h = 60 * (((b - r) / delta) + 2)
         else:
-            r_255, g_255, b_255 = 0, 0, 0
-        return r_255, g_255, b_255
+            h = 60 * (((r - g) / delta) + 4)
+
+        if h < 0:
+            h += 360
+
+        s = 0 if cmax == 0 else (delta / cmax) * 255
+        v = cmax * 255
+        return (int(h), int(s), int(v))
+
+    def classificar_cor(self, hsv: tuple) -> cor:
+        h, s, v = hsv
+
+        if (v <= 90 and s <= 90):
+            return cor.BRANCO
+        if (h >= 20 and h <= 150 and s<=110 and v<=100):
+            return cor.PRETO
+        if (h >= 20 and h <= 50 and s<=150):
+            return cor.MARROM
+        if ((h >= 0 and h <= 10) or (h >= 330 and h <= 360)): 
+            return cor.VERMELHO
+        if (h >= 20 and h <= 50):
+            return cor.AMARELO
+        if (h >= 60 and h <= 150):
+            return cor.VERDE
+        if (h >= 180 and h <= 260):
+            return cor.AZUL
+        return cor.NENHUMA
 
     def ler_cor(self):
-        red, green, blue, clear = self.le_rgbc()
-        r_255, g_255, b_255     = rgbc_to_rgb255(red, green, blue, clear)
-
-        hsv = rgb_to_hsv((r_255, g_255, b_255))
-        return Cor(hsv=hsv)
+        hsv = self.rgbc_to_hsv(self.le_rgbc())
+        return Cor(cor=self.classificar_cor(hsv), hsv=hsv)
