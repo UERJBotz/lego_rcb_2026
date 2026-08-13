@@ -62,6 +62,25 @@ rabo:: firmware/boot.py
 rabo:: firmware/bleradio.py
 	$(AMPY) --port /dev/ttyACM0 put $<
 
+.PHONY: esp_teste
+esp_teste:: teste.py
+	$(AMPY) --port /dev/ttyUSB0 put $< main.py
+esp_teste:: tcs3472.py
+	$(AMPY) --port /dev/ttyUSB0 put $<
+esp_teste:: bluetooth.py
+	$(AMPY) --port /dev/ttyUSB0 put $< blt.py
+esp_teste:: comum.py
+	$(AMPY) --port /dev/ttyUSB0 put $<
+esp_teste:: lib/polyfill.py
+	$(AMPY) --port /dev/ttyUSB0 put $< $<
+esp_teste:: lib/cores_calibradas_.py
+	$(AMPY) --port /dev/ttyUSB0 put $< $<
+rabo:: firmware/boot.py
+	$(AMPY) --port /dev/ttyUSB0 put $<
+rabo:: firmware/bleradio.py
+	$(AMPY) --port /dev/ttyUSB0 put $<
+esp_teste:: cores.py
+	$(AMPY) --port /dev/ttyUSB0 put $<
 
 .PHONY: clean
 clean:
