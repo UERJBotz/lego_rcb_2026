@@ -5,6 +5,7 @@ Código de leitura de cores largamente adaptado da equipe Titãs da Robótica
 from cores import cor
 from comum import LOG
 import math
+import struct
 
 class TCS34725:
     TCS_ADDR    = 0x29 # Endereço i2c fixo do sensor TCS34725
@@ -25,28 +26,19 @@ class TCS34725:
         except Exception as e:
             LOG(f"Problema na inicialização do TCS34725: {e}... espero que não seja durante a partida")
 
-    #! usar struct.unpack("<HHHH", readfrom_mem(..., 2*4))
     def rgbc(self):
-        clear = self._read_u16(self.CDATAL)
-        red   = self._read_u16(self.CDATAL + 2)
-        green = self._read_u16(self.CDATAL + 4)
-        blue  = self._read_u16(self.CDATAL + 6)
+        clear, red, green, blue = self._read_crgb()
         return (red, green, blue, clear)
 
-    def hsv(self):
-        return self._rgbc_to_hsv(self.rgbc())
+    def hsv(self): return self._rgbc_to_hsv(self.rgbc())
 
-    def cor(self):
-        return self._classificar_cor(self.hsv())
+    def cor(self): return self._classificar_cor(self.hsv())
 
-    #! tirar
-    def _read_u16(self, reg):
-        i2c = self.i2c
-        low  = i2c.readfrom_mem(self.TCS_ADDR, self.COMMAND_BIT | (reg), 1)
-        high = i2c.readfrom_mem(self.TCS_ADDR, self.COMMAND_BIT | (reg + 1), 1)
+    def _read_crgb(self):
+        return struct.unpack("<HHHH", self._read_bytes(self.CDATAL, 2*4))
 
-        if not low or not high: return 0
-        return (high[0] << 8) | low[0]
+    def _read_bytes(self, reg, sz):
+        return self.i2c.readfrom_mem(self.TCS_ADDR, self.COMMAND_BIT | reg, sz)
 
     @staticmethod
     def _rgbc_to_hsv(rgbc: tuple):
