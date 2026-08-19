@@ -48,38 +48,21 @@ $(TESTE_BRACO): braco.py
 #! ver algum jeito de não fazer upload sem precisar
 # #! if grep -q $< <<<"$(AMPY) ls"; then echo "já tá" fi
 # #! if ! "$(AMPY) get $<"; then echo "não tá" fi
-#! colocar arduino-cli e fazer upload do arduino
 rabo:: rabo.py
-	$(AMPY) --port /dev/ttyACM0 put $< main.py
-rabo:: bluetooth.py
-	$(AMPY) --port /dev/ttyACM0 put $< blt.py
-rabo:: comum.py
-	$(AMPY) --port /dev/ttyACM0 put $<
-rabo:: lib/polyfill.py
-	$(AMPY) --port /dev/ttyACM0 put $< $<
-rabo:: firmware/boot.py
-	$(AMPY) --port /dev/ttyACM0 put $<
-rabo:: firmware/bleradio.py
-	$(AMPY) --port /dev/ttyACM0 put $<
-
-.PHONY: esp_teste
-esp_teste:: teste.py
 	$(AMPY) --port /dev/ttyUSB0 put $< main.py
-esp_teste:: tcs3472.py
-	$(AMPY) --port /dev/ttyUSB0 put $<
-esp_teste:: bluetooth.py
+rabo:: bluetooth.py
 	$(AMPY) --port /dev/ttyUSB0 put $< blt.py
-esp_teste:: comum.py
+rabo:: comum.py
 	$(AMPY) --port /dev/ttyUSB0 put $<
-esp_teste:: lib/polyfill.py
-	$(AMPY) --port /dev/ttyUSB0 put $< $<
-esp_teste:: lib/cores_calibradas_.py
+rabo:: cores.py
+	$(AMPY) --port /dev/ttyUSB0 put $<
+rabo:: lib/polyfill.py
 	$(AMPY) --port /dev/ttyUSB0 put $< $<
 rabo:: firmware/boot.py
 	$(AMPY) --port /dev/ttyUSB0 put $<
 rabo:: firmware/bleradio.py
 	$(AMPY) --port /dev/ttyUSB0 put $<
-esp_teste:: cores.py
+rabo:: firmware/tcs3472.py
 	$(AMPY) --port /dev/ttyUSB0 put $<
 
 .PHONY: clean
