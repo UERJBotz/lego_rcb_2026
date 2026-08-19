@@ -200,6 +200,9 @@ def test():
 
     if False: testes.imprimir_cor_cubo_para_sempre()
     if False: testes.imprimir_cor_caçamba_para_sempre()
+    if True:
+        blt.resetar_garra()
+        testes.checar_caçamba_para_sempre()
 
     while False:
         if True: vel = 50 # mudar quando testar
@@ -239,7 +242,7 @@ def test():
     if False: tira_obstaculo((3,3))
     if False: tira_obstaculo((4,4))
 
-    if True:
+    if False:
         cores_caçambas = [
             Cor.enum.NENHUMA for _ in range(NUM_CAÇAMBAS)
         ]
@@ -949,6 +952,22 @@ def procura(pos_estimada, cores_caçambas):
 
     SucessoOuCatástrofe("sem caminhos possíveis")
 
+def checar_cor_caçamba(num_vezes=9, espera=200):
+    contagens = [0 for i in range(len(Cor.enum))]
+
+    for i in range(num_vezes):
+        wait(espera)
+        cor = blt.ver_cor_cubo().cor
+        contagens[cor] += 1
+    
+    print(contagens, end="")
+    cor_moda = 0
+    for i in range(len(contagens)):
+        if contagens[cor_moda] < contagens[i]:
+            cor_moda = i
+
+    return Cor(cor=cor_moda)
+
 def descobrir_cor_caçambas():
     global cores_caçambas
     if not cores_caçambas:
@@ -960,6 +979,7 @@ def descobrir_cor_caçambas():
     achar_não_verde_alinhado()
     rodas.straight(DIST_SENSORES_CENTRO)
     acertar_orientação("S")
+    blt.abrir_garra()
 
     #gambiarra ver o 1 com cor incerta
     pid_caçamba = pid(kp=0.5)
@@ -967,19 +987,23 @@ def descobrir_cor_caçambas():
     andar_dist_linha(DIST_BORDA_CAÇAMBA - DIST_ALINHO, pid=pid_caçamba)
 
     for i in range(NUM_CAÇAMBAS):
-        cores_caçambas[i] = blt.ver_cor_caçamba()
+        acertar_orientação("O")
+        rodas.straight(DIST_VERDE_CAÇAMBA - DIST_EIXO_SENSOR)
+        cores_caçambas[i] = checar_cor_caçamba()
         bipes.cabeca()
+        dar_ré(DIST_VERDE_CAÇAMBA - DIST_EIXO_SENSOR)
+        acertar_orientação("S")
         dist = blt.ver_dist_caçamba()
 
         #! rataria cores caçambas
-        if cores_caçambas[i].cor == Cor.enum.MARROM:
-            cores_caçambas[i] = Cor(cor=Cor.enum.AMARELO)
+        #if cores_caçambas[i].cor == Cor.enum.MARROM:
+        #    cores_caçambas[i] = Cor(cor=Cor.enum.AMARELO)
         #if cores_caçambas[i].cor == Cor.enum.PRETO:
         #    if False: cores_caçambas[i] = Cor(cor=Cor.enum.AZUL)
         #    else:    cores_caçambas[i] = Cor(cor=Cor.enum.VERDE)
-        if cores_caçambas[i].cor == Cor.enum.NENHUMA:
-            if dist < TAM_QUARTEIRÃO:
-                cores_caçambas[i] = Cor(cor=Cor.enum.PRETO)
+        #if cores_caçambas[i].cor == Cor.enum.NENHUMA:
+        #    if dist < TAM_QUARTEIRÃO:
+        #        cores_caçambas[i] = Cor(cor=Cor.enum.PRETO)
 
         LOG(f"descobrir_cor_caçamba: caçamba {cores_caçambas[i]} a {dist/10}cm")
 
@@ -996,6 +1020,12 @@ class testes:
         while True:
             cor = blt.ver_cor_caçamba()
             print(cor)
+
+    @staticmethod
+    def checar_caçamba_para_sempre():
+        while True:
+            cor = checar_cor_caçamba()
+            print(cor, cor.cor)
 
     @staticmethod
     def imprimir_dist_caçamba_pra_sempre():
