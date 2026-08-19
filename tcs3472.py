@@ -7,13 +7,12 @@ from comum import LOG
 import math
 
 class TCS34725:
-    TCS_ADDR = 0x29 # Endereço i2c fixo do sensor TCS34725
+    TCS_ADDR    = 0x29 # Endereço i2c fixo do sensor TCS34725
     COMMAND_BIT = 0x80
-    ENABLE = 0x00
-    ATIME = 0x01
-    CONTROL = 0x0F
-    ID = 0x12
-    CDATAL = 0x14
+    ENABLE      = 0x00
+    ATIME       = 0x01
+    CONTROL     = 0x0F
+    CDATAL      = 0x14
 
     def __init__(self, i2c):
         self.i2c = i2c
@@ -26,7 +25,21 @@ class TCS34725:
         except Exception as e:
             LOG(f"Problema na inicialização do TCS34725: {e}... espero que não seja durante a partida")
 
-    #! colocar no final #! usar readfrom_mem(..., 2)
+    #! usar struct.unpack("<HHHH", readfrom_mem(..., 2*4))
+    def rgbc(self):
+        clear = self._read_u16(self.CDATAL)
+        red   = self._read_u16(self.CDATAL + 2)
+        green = self._read_u16(self.CDATAL + 4)
+        blue  = self._read_u16(self.CDATAL + 6)
+        return (red, green, blue, clear)
+
+    def hsv(self):
+        return self._rgbc_to_hsv(self.rgbc())
+
+    def cor(self):
+        return self._classificar_cor(self.hsv())
+
+    #! tirar
     def _read_u16(self, reg):
         i2c = self.i2c
         low  = i2c.readfrom_mem(self.TCS_ADDR, self.COMMAND_BIT | (reg), 1)
@@ -34,14 +47,6 @@ class TCS34725:
 
         if not low or not high: return 0
         return (high[0] << 8) | low[0]
-
-    #! usar readfrom_mem(..., 2*4)
-    def rgbc(self):
-        clear = self._read_u16(self.CDATAL)
-        red   = self._read_u16(self.CDATAL + 2)
-        green = self._read_u16(self.CDATAL + 4)
-        blue  = self._read_u16(self.CDATAL + 6)
-        return (red, green, blue, clear) 
 
     @staticmethod
     def _rgbc_to_hsv(rgbc: tuple):
@@ -82,7 +87,3 @@ class TCS34725:
 
         return cor.NENHUMA
 
-    #! colocar no início
-    def cor(self):
-        hsv = self._rgbc_to_hsv(self.rgbc())
-        return self._classificar_cor(hsv)
