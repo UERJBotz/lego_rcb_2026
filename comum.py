@@ -39,10 +39,11 @@ class globais:
         esperado = None
         if   self.nome == "braço":  esperado = "spike0"
         elif self.nome == "cabeça": esperado = "spike1"
-        elif self.nome == "rabo":   esperado = "supermini0"
-        else: ASSERT(False, "nome de robô inesperado")
+        elif self.nome == "rabo":   esperado = "esp32"
+        else: ASSERT(False, "nome de robô desconhecido")
 
         while name != esperado:
+            ASSERT(False, "nome de robô inesperado")
             hub.speaker.beep(frequency=1024); wait(200)
         else:
             hub.light.blink(Color.ORANGE, [100,50,200,100])
