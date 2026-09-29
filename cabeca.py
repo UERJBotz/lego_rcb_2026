@@ -486,7 +486,7 @@ def pid(kp, kd=0, ki=0):
     def f(erro):
         nonlocal ierro
         nonlocal erro_ant
-        derro = erro_ant - erro
+        derro = erro - erro_ant
         ativ  = erro*kp + derro*kd + ierro*ki
 
         erro_ant = erro
