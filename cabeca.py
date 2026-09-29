@@ -131,7 +131,7 @@ def main():
             dar_ré_alinhar_primeiro_bloco()
             posicionamento_inicial()
 
-        while quarteirão_atual <= MAPA_Y_MAX//2:
+        while False:#quarteirão_atual <= MAPA_Y_MAX//2:
             LOG(f"main: varrendo: quarteirão {quarteirão_atual}")
 
             achar_não_verde_alinhado()
@@ -523,13 +523,22 @@ def seguir_linha_até(parada=até_dist_max_ou_cruzamento(TAM_PISTA_TODA),
 
     rodas.stop()
 
+def girar_orientação(passos):
+    global orientação_estimada
+    #+ pra horário e - pra antihorário
+    cardinais = ["N", "L", "S", "O"]
+    i = cardinais.index(orientação_estimada)
+    orientação_estimada = cardinais[(i + passos) % 4]
+
 def curva_linha_esquerda():
     dir_linha.mul = dir_linha.DIR
     rodas.curve(DIST_EIXO_SENSOR, -90)
+    girar_orientação(-1)
 
 def curva_linha_direita():
     dir_linha.mul = dir_linha.ESQ
     rodas.curve(DIST_EIXO_SENSOR, +90)
+    girar_orientação(+1)
 
 
 def alinha_parede(vel, vel_ang, giro_max=45,
@@ -660,16 +669,16 @@ def seguir_caminho(caminho): #! lidar com outras coisas
     def interpretar_movimento_cidade(mov):
         #! fazer run length encoding aqui
         if   mov == tipo_movimento.FRENTE:
-            achar_cruzamento_linha(dist_max=TAM_BLOCO)
+            achar_cruzamento_linha(dist_max=TAM_BLOCO + 2*DIST_EIXO_SENSOR)
         elif mov == tipo_movimento.TRAS:
             dar_meia_volta_linha()
-            achar_cruzamento_linha(dist_max=TAM_BLOCO)
+            achar_cruzamento_linha(dist_max=TAM_BLOCO + 2*DIST_EIXO_SENSOR)
         elif mov == tipo_movimento.ESQUERDA_FRENTE:
             curva_linha_esquerda()
-            achar_cruzamento_linha(dist_max=DIST_EIXO_SENSOR)
+            achar_cruzamento_linha(dist_max=TAM_BLOCO + 2*DIST_EIXO_SENSOR)
         elif mov == tipo_movimento.DIREITA_FRENTE:
             curva_linha_direita()
-            achar_cruzamento_linha(dist_max=TAM_BLOCO)
+            achar_cruzamento_linha(dist_max=TAM_BLOCO + 2*DIST_EIXO_SENSOR)
         elif mov == tipo_movimento.ESQUERDA:
             curva_linha_esquerda()
         elif mov == tipo_movimento.DIREITA:
