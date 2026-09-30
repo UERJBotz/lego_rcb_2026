@@ -53,6 +53,12 @@ DIST_ALINHAR_PID_CACAMBA = 60
 DIST_BORDA_CAÇAMBA = 130
 DIST_CAÇAMBA = 100
 DIST_VERDE_CAÇAMBA = 80
+<<<<<<< HEAD
+=======
+VEL_SEGUIR_LINHA = 380 #mm/s
+VEL_MIN_SEGUIR_LINHA = 100
+K_VEL = 2
+>>>>>>> 0498367 (tentativa vel adaptativa(+))
 TAM_PISTA_TODA = TAM_QUARTEIRÃO*6
 BLOCO_MEIO = 4
 
@@ -791,6 +797,8 @@ def seguir_linha_até(parada=até_dist_max_ou_cruzamento(TAM_PISTA_TODA),
         else:
             erro = dir_linha.mul * (REFL_IDEAL - centro)
 
+        if vel > 0:
+            vel = max(VEL_MIN_SEGUIR_LINHA, vel - K_VEL*abs(erro))
         rodas.drive(vel, pid(erro))
 
         if parada(rodas.distance(), esq, centro, dir, preto): break
