@@ -48,7 +48,9 @@ DIST_SENSORES_CENTRO = 20
 DIST_BORDA_CAÇAMBA = 130
 DIST_CAÇAMBA = 100
 DIST_VERDE_CAÇAMBA = 80
-VEL_SEGUIR_LINHA = 100 #mm/s
+VEL_SEGUIR_LINHA = 380 #mm/s
+VEL_MIN_SEGUIR_LINHA = 100
+K_VEL = 2
 TAM_PISTA_TODA = TAM_QUARTEIRÃO*6
 BLOCO_MEIO = 4
 
@@ -513,6 +515,8 @@ def seguir_linha_até(parada=até_dist_max_ou_cruzamento(TAM_PISTA_TODA),
         dir    = sensor_cor_dir.reflection()
 
         erro = dir_linha.mul * (REFL_IDEAL - centro)
+        if vel > 0:
+            vel = max(VEL_MIN_SEGUIR_LINHA, vel - K_VEL*abs(erro))
         rodas.drive(vel, pid(erro))
 
         if parada(rodas.distance(), esq, centro, dir, preto): break
