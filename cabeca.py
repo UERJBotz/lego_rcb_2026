@@ -27,8 +27,8 @@ NUM_CUBOS_PEGÁVEIS = 2
 
 ANG_LIMIAR_GARRA_FECHADA = 145
 VEL_ALINHAR = 80
-VEL_ANG_ALINHAR = 20
-GIRO_MAX_ALINHAR = 90
+VEL_ANG_ALINHAR  = 60
+GIRO_MAX_ALINHAR = 50
 
 TAM_QUARTEIRÃO = 300
 TAM_BLOCO = TAM_QUARTEIRÃO//2
@@ -199,7 +199,7 @@ def test():
         print(ang)
 
     if False: testes.imprimir_cor_cubo_para_sempre()
-    if True: testes.imprimir_cor_caçamba_para_sempre()
+    if False: testes.imprimir_cor_caçamba_para_sempre()
 
     while False:
         if True: vel = 50 # mudar quando testar
@@ -558,16 +558,26 @@ def alinha_parede(vel, vel_ang, giro_max=45,
         elif not func_cor_pista(dir):
             LOG(f"alinha_parede: torto pra direita {esq}, {dir}")
             GIRO = giro_max
+            tardio = "esq"
         elif not func_cor_pista(esq):
             LOG(f"alinha_parede: torto pra esquerda {esq}, {dir}")
             GIRO = -giro_max
-
+            tardio = "dir"
+    
         rodas.turn(GIRO, wait=False) #! fazer gira_até
         LOG("alinha_parede: girando")
         while not rodas.done():
             extra = cores.todas(sensor_cor_esq, sensor_cor_dir)
             esq, dir = extra
-            if  alinhado_parede(esq, dir):
+            if ((tardio == "esq" and not func_cor_pista(esq)) or
+                (tardio == "dir" and not func_cor_pista(dir))):
+                ang = rodas.angle()
+                parar_girar()
+                rodas.turn(-ang / 2)
+
+                LOG(f"alinha_parede: alinhou pelo meio, ang={ang}")
+                return True, extra
+            elif  alinhado_parede(esq, dir):
                 LOG(f"alinha_parede: alinhado parede: {esq}, {dir}")
                 parar_girar()
                 return True, extra # deve tar alinhado
