@@ -48,7 +48,9 @@ DIST_SENSORES_CENTRO = 20
 DIST_BORDA_CAÇAMBA = 130
 DIST_CAÇAMBA = 100
 DIST_VERDE_CAÇAMBA = 80
-VEL_SEGUIR_LINHA = 100 #mm/s
+VEL_SEGUIR_LINHA = 380 #mm/s
+VEL_MIN_SEGUIR_LINHA = 100
+K_VEL = 2
 TAM_PISTA_TODA = TAM_QUARTEIRÃO*6
 BLOCO_MEIO = 4
 
@@ -131,7 +133,7 @@ def main():
             dar_ré_alinhar_primeiro_bloco()
             posicionamento_inicial()
 
-        while quarteirão_atual <= MAPA_Y_MAX//2:
+        while False:#quarteirão_atual <= MAPA_Y_MAX//2:
             LOG(f"main: varrendo: quarteirão {quarteirão_atual}")
 
             achar_não_verde_alinhado()
@@ -486,7 +488,7 @@ def pid(kp, kd=0, ki=0):
     def f(erro):
         nonlocal ierro
         nonlocal erro_ant
-        derro = erro_ant - erro
+        derro = erro - erro_ant
         ativ  = erro*kp + derro*kd + ierro*ki
 
         erro_ant = erro
@@ -513,6 +515,8 @@ def seguir_linha_até(parada=até_dist_max_ou_cruzamento(TAM_PISTA_TODA),
         dir    = sensor_cor_dir.reflection()
 
         erro = dir_linha.mul * (REFL_IDEAL - centro)
+        if vel > 0:
+            vel = max(VEL_MIN_SEGUIR_LINHA, vel - K_VEL*abs(erro))
         rodas.drive(vel, pid(erro))
 
         if parada(rodas.distance(), esq, centro, dir, preto): break
@@ -523,13 +527,22 @@ def seguir_linha_até(parada=até_dist_max_ou_cruzamento(TAM_PISTA_TODA),
 
     rodas.stop()
 
+def girar_orientação(passos):
+    global orientação_estimada
+    #+ pra horário e - pra antihorário
+    cardinais = ["N", "L", "S", "O"]
+    i = cardinais.index(orientação_estimada)
+    orientação_estimada = cardinais[(i + passos) % 4]
+
 def curva_linha_esquerda():
     dir_linha.mul = dir_linha.DIR
     rodas.curve(DIST_EIXO_SENSOR, -90)
+    girar_orientação(-1)
 
 def curva_linha_direita():
     dir_linha.mul = dir_linha.ESQ
     rodas.curve(DIST_EIXO_SENSOR, +90)
+    girar_orientação(+1)
 
 
 def alinha_parede(vel, vel_ang, giro_max=45,
@@ -660,16 +673,16 @@ def seguir_caminho(caminho): #! lidar com outras coisas
     def interpretar_movimento_cidade(mov):
         #! fazer run length encoding aqui
         if   mov == tipo_movimento.FRENTE:
-            achar_cruzamento_linha(dist_max=TAM_BLOCO)
+            achar_cruzamento_linha(dist_max=TAM_BLOCO + 2*DIST_EIXO_SENSOR)
         elif mov == tipo_movimento.TRAS:
             dar_meia_volta_linha()
-            achar_cruzamento_linha(dist_max=TAM_BLOCO)
+            achar_cruzamento_linha(dist_max=TAM_BLOCO + 2*DIST_EIXO_SENSOR)
         elif mov == tipo_movimento.ESQUERDA_FRENTE:
             curva_linha_esquerda()
-            achar_cruzamento_linha(dist_max=DIST_EIXO_SENSOR)
+            achar_cruzamento_linha(dist_max=TAM_BLOCO + 2*DIST_EIXO_SENSOR)
         elif mov == tipo_movimento.DIREITA_FRENTE:
             curva_linha_direita()
-            achar_cruzamento_linha(dist_max=TAM_BLOCO)
+            achar_cruzamento_linha(dist_max=TAM_BLOCO + 2*DIST_EIXO_SENSOR)
         elif mov == tipo_movimento.ESQUERDA:
             curva_linha_esquerda()
         elif mov == tipo_movimento.DIREITA:
