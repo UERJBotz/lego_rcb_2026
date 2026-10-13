@@ -25,8 +25,7 @@ from comum import LOG, ERRO, ASSERT
 
 NUM_CUBOS_PEGÁVEIS = 2
 
-ANG_LIMIAR_GARRA_FECHADA = 150
-VEL_ALINHAR = 80
+    VEL_ALINHAR = 80
 VEL_ANG_ALINHAR = 20
 GIRO_MAX_ALINHAR = 90
 
@@ -48,9 +47,9 @@ DIST_SENSORES_CENTRO = 20
 DIST_BORDA_CAÇAMBA = 130
 DIST_CAÇAMBA = 100
 DIST_VERDE_CAÇAMBA = 80
-VEL_SEGUIR_LINHA = 380 #mm/s
+VEL_SEGUIR_LINHA = 150 #mm/s  testar valores
 VEL_MIN_SEGUIR_LINHA = 100
-K_VEL = 2
+K_VEL = 1.5   #testar valores
 TAM_PISTA_TODA = TAM_QUARTEIRÃO*6
 BLOCO_MEIO = 4
 
@@ -541,9 +540,15 @@ def pid(kp, kd=0, ki=0):
         erro_ant = erro
         ierro   += erro
         return ativ
-    return f
 
-pid_linha = pid(kp=0.50)
+    def reset():
+        nonlocal ierro, erro_ant
+        ierro = erro_ant = 0
+
+    return f, reset
+
+pid_linha, reset_pid_linha = pid(kp=0.5)#, ki=0.001, kd=3)
+
 def seguir_linha_até(parada=até_dist_max_ou_cruzamento(TAM_PISTA_TODA),
                      *, vel=None, pid=None, parar_no_verde=False):
     if vel is None: vel = VEL_SEGUIR_LINHA
@@ -563,8 +568,10 @@ def seguir_linha_até(parada=até_dist_max_ou_cruzamento(TAM_PISTA_TODA),
 
         erro = dir_linha.mul * (REFL_IDEAL - centro)
         if vel > 0:
-            vel = max(VEL_MIN_SEGUIR_LINHA, vel - K_VEL*abs(erro))
-        rodas.drive(vel, pid(erro))
+            vel_atual = min(vel, max(VEL_MIN_SEGUIR_LINHA, vel - K_VEL*abs(erro)))
+        else:
+            vel_atual = vel
+        rodas.drive(vel_atual, pid(erro))
 
         if parada(rodas.distance(), esq, centro, dir, preto): break
         if parar_no_verde: #! isso era o erro do bipe eterno, ver se precisa
@@ -585,11 +592,13 @@ def curva_linha_esquerda():
     dir_linha.mul = dir_linha.DIR
     rodas.curve(DIST_EIXO_SENSOR, -90)
     girar_orientação(-1)
+    reset_pid_linha()
 
 def curva_linha_direita():
     dir_linha.mul = dir_linha.ESQ
     rodas.curve(DIST_EIXO_SENSOR, +90)
     girar_orientação(+1)
+    reset_pid_linha()
 
 
 def alinha_parede(vel, vel_ang, giro_max=45,
@@ -988,7 +997,7 @@ def descobrir_cor_caçambas():
     acertar_orientação("S")
 
     #gambiarra ver o 1 com cor incerta
-    pid_caçamba = pid(kp=0.5)
+    pid_caçamba, _ = pid(kp=0.5)
     andar_dist_linha(DIST_ALINHO, vel=20, pid=pid_caçamba)
     andar_dist_linha(DIST_BORDA_CAÇAMBA - DIST_ALINHO, pid=pid_caçamba)
 
