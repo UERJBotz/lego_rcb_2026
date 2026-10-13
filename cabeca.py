@@ -49,7 +49,7 @@ DIST_BORDA_CAÇAMBA = 130
 DIST_CAÇAMBA = 100
 DIST_VERDE_CAÇAMBA = 80
 VEL_SEGUIR_LINHA = 150 #mm/s  testar valores
-VEL_MIN_SEGUIR_LINHA = 100
+VEL_MIN_SEGUIR_LINHA = 90
 K_VEL = 1.5   #testar valores
 TAM_PISTA_TODA = TAM_QUARTEIRÃO*6
 BLOCO_MEIO = 4
@@ -315,13 +315,6 @@ def inverte_orientação(ori=None):
 
     return ori #!< não é pra chegar aqui
 
-def dar_meia_volta():
-    global orientação_estimada
-    rodas.turn(180)
-
-    orientação_estimada = inverte_orientação()
-    LOG(f"dar_meia_volta: {orientação_estimada=}")
-
 def dar_meia_volta_linha():
     global orientação_estimada
 
@@ -329,6 +322,7 @@ def dar_meia_volta_linha():
     elif dir_linha.mul == dir_linha.DIR: rodas.curve(TAM_FAIXA//2, -180)
 
     orientação_estimada = inverte_orientação()
+    reset_pid_linha()
     LOG(f"dar_meia_volta_linha: {orientação_estimada=}")
 
 #! separar esses ifelses de orientação pra girar_orientação esq e dir que nem inverte_orientação
@@ -463,12 +457,20 @@ def até_dist_max(dist_max):
 
 def até_dist_max_ou_cruzamento(dist_max):
     def func(dist, esq, centro, dir, preto):
+        cruzamento = (
+            dist >= 80
+            and até_cruzamento(dist, esq, centro, dir, preto)
+        )
+        return cruzamento or dist >= dist_max
+    return func
+'''def até_dist_max_ou_cruzamento(dist_max):
+    def func(dist, esq, centro, dir, preto):
         return (
             até_cruzamento(dist, esq, centro, dir, preto) or
             até_dist_max(dist_max)(dist, esq, centro, dir, preto)
         )
     return func
-
+'''
 def dar_ré_linha(dist, **kwargs):
     seguir_linha_até(até_dist_max(dist), vel=-70, **kwargs) #! vel hardcoded
 
@@ -501,7 +503,7 @@ def pid(kp, kd=0, ki=0):
 
     return f, reset
 
-pid_linha, reset_pid_linha = pid(kp=0.5)#, ki=0.001, kd=3)
+pid_linha, reset_pid_linha = pid(kp=0.5, kd= 0.7)
 
 def seguir_linha_até(parada=até_dist_max_ou_cruzamento(TAM_PISTA_TODA),
                      *, vel=None, pid=None, parar_no_verde=False):
@@ -526,8 +528,12 @@ def seguir_linha_até(parada=até_dist_max_ou_cruzamento(TAM_PISTA_TODA),
         else:
             vel_atual = vel
         rodas.drive(vel_atual, pid(erro))
-
-        if parada(rodas.distance(), esq, centro, dir, preto): break
+        
+        dist = rodas.distance()
+        cruzamento = preto(esq) and preto(dir)
+        if parada(dist, esq, centro, dir, preto):
+            LOG(f"PAROU dist={dist:.1f} esq={esq} centro={centro} dir={dir} cruzamento={cruzamento}")
+            break
         if parar_no_verde: #! isso era o erro do bipe eterno, ver se precisa
             esq, dir = cores.todas(sensor_cor_esq, sensor_cor_dir)
             if esq == Cor.enum.VERDE    and dir == Cor.enum.VERDE: break
@@ -683,16 +689,16 @@ def seguir_caminho(caminho): #! lidar com outras coisas
     def interpretar_movimento_cidade(mov):
         #! fazer run length encoding aqui
         if   mov == tipo_movimento.FRENTE:
-            achar_cruzamento_linha(dist_max=TAM_BLOCO + 2*DIST_EIXO_SENSOR)
+            achar_cruzamento_linha(dist_max=TAM_BLOCO + 3*DIST_EIXO_SENSOR)
         elif mov == tipo_movimento.TRAS:
             dar_meia_volta_linha()
-            achar_cruzamento_linha(dist_max=TAM_BLOCO + 2*DIST_EIXO_SENSOR)
+            achar_cruzamento_linha(dist_max=TAM_BLOCO + 3*DIST_EIXO_SENSOR)
         elif mov == tipo_movimento.ESQUERDA_FRENTE:
             curva_linha_esquerda()
-            achar_cruzamento_linha(dist_max=TAM_BLOCO + 2*DIST_EIXO_SENSOR)
+            achar_cruzamento_linha(dist_max=TAM_BLOCO + 3*DIST_EIXO_SENSOR)
         elif mov == tipo_movimento.DIREITA_FRENTE:
             curva_linha_direita()
-            achar_cruzamento_linha(dist_max=TAM_BLOCO + 2*DIST_EIXO_SENSOR)
+            achar_cruzamento_linha(dist_max=TAM_BLOCO + 3*DIST_EIXO_SENSOR)
         elif mov == tipo_movimento.ESQUERDA:
             curva_linha_esquerda()
         elif mov == tipo_movimento.DIREITA:
