@@ -29,7 +29,11 @@ BOTÕES_DESLIGA = {Button.LEFT}
 
 NUM_CUBOS_PEGÁVEIS = 2
 
+<<<<<<< HEAD
 VEL_ALINHAR = 80
+=======
+    VEL_ALINHAR = 80
+>>>>>>> 89780af (vel adaptativa funcionando com essa vel específica)
 VEL_ANG_ALINHAR = 20
 GIRO_MAX_ALINHAR = 90
 
@@ -53,12 +57,9 @@ DIST_ALINHAR_PID_CACAMBA = 60
 DIST_BORDA_CAÇAMBA = 130
 DIST_CAÇAMBA = 100
 DIST_VERDE_CAÇAMBA = 80
-<<<<<<< HEAD
-=======
-VEL_SEGUIR_LINHA = 380 #mm/s
+VEL_SEGUIR_LINHA = 280 #mm/s
 VEL_MIN_SEGUIR_LINHA = 100
 K_VEL = 2
->>>>>>> 0498367 (tentativa vel adaptativa(+))
 TAM_PISTA_TODA = TAM_QUARTEIRÃO*6
 BLOCO_MEIO = 4
 
@@ -776,9 +777,15 @@ def pid(kp, kd=0, ki=0):
         erro_ant = erro
         ierro   += erro
         return ativ
-    return f
 
-pid_linha = pid(kp=0.50)
+    def reset():
+        nonlocal ierro, erro_ant
+        ierro = erro_ant = 0
+
+    return f, reset
+
+pid_linha, reset_pid_linha = pid(kp=0.5)#, ki=0.001, kd=3)
+
 def seguir_linha_até(parada=até_dist_max_ou_cruzamento(TAM_PISTA_TODA),
                      *, vel=None, pid=None, parar_no_verde=False, caçamba=False):
     if vel is None: vel = VEL_SEGUIR_LINHA
@@ -798,8 +805,10 @@ def seguir_linha_até(parada=até_dist_max_ou_cruzamento(TAM_PISTA_TODA),
             erro = dir_linha.mul * (REFL_IDEAL - centro)
 
         if vel > 0:
-            vel = max(VEL_MIN_SEGUIR_LINHA, vel - K_VEL*abs(erro))
-        rodas.drive(vel, pid(erro))
+            vel_atual = min(vel, max(VEL_MIN_SEGUIR_LINHA, vel - K_VEL*abs(erro)))
+        else:
+            vel_atual = vel
+        rodas.drive(vel_atual, pid(erro))
 
         if parada(rodas.distance(), esq, centro, dir, preto): break
         if parar_no_verde: #! isso era o erro do bipe eterno, ver se precisa
@@ -820,11 +829,13 @@ def curva_linha_esquerda():
     dir_linha.mul = dir_linha.DIR
     rodas.curve(DIST_EIXO_SENSOR, -90)
     girar_orientação(-1)
+    reset_pid_linha()
 
 def curva_linha_direita():
     dir_linha.mul = dir_linha.ESQ
     rodas.curve(DIST_EIXO_SENSOR, +90)
     girar_orientação(+1)
+    reset_pid_linha()
 
 def virar_esquerda_linha():
     alinhar_eixo_cruzamento()
@@ -1344,9 +1355,15 @@ def descobrir_cor_caçambas():
     acertar_orientação("S")
 
     #gambiarra ver o 1 com cor incerta
+<<<<<<< HEAD
     pid_caçamba = pid(kp=0.5)
     andar_dist_linha(DIST_ALINHO, vel=20, pid=pid_caçamba, caçamba=True)
     andar_dist_linha(DIST_BORDA_CAÇAMBA - DIST_ALINHO, pid=pid_caçamba, caçamba=True)
+=======
+    pid_caçamba, _ = pid(kp=0.5)
+    andar_dist_linha(DIST_ALINHO, vel=20, pid=pid_caçamba)
+    andar_dist_linha(DIST_BORDA_CAÇAMBA - DIST_ALINHO, pid=pid_caçamba)
+>>>>>>> 89780af (vel adaptativa funcionando com essa vel específica)
 
     for i in range(NUM_CAÇAMBAS):
         cores_caçambas[i] = blt.ver_cor_caçamba()
