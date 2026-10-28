@@ -48,7 +48,9 @@ DIST_SENSORES_CENTRO = 20
 DIST_BORDA_CAÇAMBA = 130
 DIST_CAÇAMBA = 100
 DIST_VERDE_CAÇAMBA = 80
-VEL_SEGUIR_LINHA = 100 #mm/s
+VEL_SEGUIR_LINHA = 150 #mm/s  testar valores
+VEL_MIN_SEGUIR_LINHA = 90
+K_VEL = 1.5   #testar valores
 TAM_PISTA_TODA = TAM_QUARTEIRÃO*6
 BLOCO_MEIO = 4
 
@@ -131,7 +133,7 @@ def main():
             dar_ré_alinhar_primeiro_bloco()
             posicionamento_inicial()
 
-        while quarteirão_atual <= MAPA_Y_MAX//2:
+        while False:#quarteirão_atual <= MAPA_Y_MAX//2:
             LOG(f"main: varrendo: quarteirão {quarteirão_atual}")
 
             achar_não_verde_alinhado()
@@ -313,13 +315,6 @@ def inverte_orientação(ori=None):
 
     return ori #!< não é pra chegar aqui
 
-def dar_meia_volta():
-    global orientação_estimada
-    rodas.turn(180)
-
-    orientação_estimada = inverte_orientação()
-    LOG(f"dar_meia_volta: {orientação_estimada=}")
-
 def dar_meia_volta_linha():
     global orientação_estimada
 
@@ -327,6 +322,7 @@ def dar_meia_volta_linha():
     elif dir_linha.mul == dir_linha.DIR: rodas.curve(TAM_FAIXA//2, -180)
 
     orientação_estimada = inverte_orientação()
+    reset_pid_linha()
     LOG(f"dar_meia_volta_linha: {orientação_estimada=}")
 
 #! separar esses ifelses de orientação pra girar_orientação esq e dir que nem inverte_orientação
@@ -461,12 +457,20 @@ def até_dist_max(dist_max):
 
 def até_dist_max_ou_cruzamento(dist_max):
     def func(dist, esq, centro, dir, preto):
+        cruzamento = (
+            dist >= 80
+            and até_cruzamento(dist, esq, centro, dir, preto)
+        )
+        return cruzamento or dist >= dist_max
+    return func
+'''def até_dist_max_ou_cruzamento(dist_max):
+    def func(dist, esq, centro, dir, preto):
         return (
             até_cruzamento(dist, esq, centro, dir, preto) or
             até_dist_max(dist_max)(dist, esq, centro, dir, preto)
         )
     return func
-
+'''
 def dar_ré_linha(dist, **kwargs):
     seguir_linha_até(até_dist_max(dist), vel=-70, **kwargs) #! vel hardcoded
 
@@ -486,15 +490,21 @@ def pid(kp, kd=0, ki=0):
     def f(erro):
         nonlocal ierro
         nonlocal erro_ant
-        derro = erro_ant - erro
+        derro = erro - erro_ant
         ativ  = erro*kp + derro*kd + ierro*ki
 
         erro_ant = erro
         ierro   += erro
         return ativ
-    return f
 
-pid_linha = pid(kp=0.50)
+    def reset():
+        nonlocal ierro, erro_ant
+        ierro = erro_ant = 0
+
+    return f, reset
+
+pid_linha, reset_pid_linha = pid(kp=0.5, kd= 0.7)
+
 def seguir_linha_até(parada=até_dist_max_ou_cruzamento(TAM_PISTA_TODA),
                      *, vel=None, pid=None, parar_no_verde=False):
     if vel is None: vel = VEL_SEGUIR_LINHA
@@ -513,9 +523,17 @@ def seguir_linha_até(parada=até_dist_max_ou_cruzamento(TAM_PISTA_TODA),
         dir    = sensor_cor_dir.reflection()
 
         erro = dir_linha.mul * (REFL_IDEAL - centro)
-        rodas.drive(vel, pid(erro))
-
-        if parada(rodas.distance(), esq, centro, dir, preto): break
+        if vel > 0:
+            vel_atual = min(vel, max(VEL_MIN_SEGUIR_LINHA, vel - K_VEL*abs(erro)))
+        else:
+            vel_atual = vel
+        rodas.drive(vel_atual, pid(erro))
+        
+        dist = rodas.distance()
+        cruzamento = preto(esq) and preto(dir)
+        if parada(dist, esq, centro, dir, preto):
+            LOG(f"PAROU dist={dist:.1f} esq={esq} centro={centro} dir={dir} cruzamento={cruzamento}")
+            break
         if parar_no_verde: #! isso era o erro do bipe eterno, ver se precisa
             esq, dir = cores.todas(sensor_cor_esq, sensor_cor_dir)
             if esq == Cor.enum.VERDE    and dir == Cor.enum.VERDE: break
@@ -523,13 +541,24 @@ def seguir_linha_até(parada=até_dist_max_ou_cruzamento(TAM_PISTA_TODA),
 
     rodas.stop()
 
+def girar_orientação(passos):
+    global orientação_estimada
+    #+ pra horário e - pra antihorário
+    cardinais = ["N", "L", "S", "O"]
+    i = cardinais.index(orientação_estimada)
+    orientação_estimada = cardinais[(i + passos) % 4]
+
 def curva_linha_esquerda():
     dir_linha.mul = dir_linha.DIR
     rodas.curve(DIST_EIXO_SENSOR, -90)
+    girar_orientação(-1)
+    reset_pid_linha()
 
 def curva_linha_direita():
     dir_linha.mul = dir_linha.ESQ
     rodas.curve(DIST_EIXO_SENSOR, +90)
+    girar_orientação(+1)
+    reset_pid_linha()
 
 
 def alinha_parede(vel, vel_ang, giro_max=45,
@@ -660,16 +689,16 @@ def seguir_caminho(caminho): #! lidar com outras coisas
     def interpretar_movimento_cidade(mov):
         #! fazer run length encoding aqui
         if   mov == tipo_movimento.FRENTE:
-            achar_cruzamento_linha(dist_max=TAM_BLOCO)
+            achar_cruzamento_linha(dist_max=TAM_BLOCO + 3*DIST_EIXO_SENSOR)
         elif mov == tipo_movimento.TRAS:
             dar_meia_volta_linha()
-            achar_cruzamento_linha(dist_max=TAM_BLOCO)
+            achar_cruzamento_linha(dist_max=TAM_BLOCO + 3*DIST_EIXO_SENSOR)
         elif mov == tipo_movimento.ESQUERDA_FRENTE:
             curva_linha_esquerda()
-            achar_cruzamento_linha(dist_max=DIST_EIXO_SENSOR)
+            achar_cruzamento_linha(dist_max=TAM_BLOCO + 3*DIST_EIXO_SENSOR)
         elif mov == tipo_movimento.DIREITA_FRENTE:
             curva_linha_direita()
-            achar_cruzamento_linha(dist_max=TAM_BLOCO)
+            achar_cruzamento_linha(dist_max=TAM_BLOCO + 3*DIST_EIXO_SENSOR)
         elif mov == tipo_movimento.ESQUERDA:
             curva_linha_esquerda()
         elif mov == tipo_movimento.DIREITA:
@@ -911,7 +940,7 @@ def procura(pos_estimada, cores_caçambas):
         # vê se tem alguma coisa na frente
         andar_dist_linha(DIST_CRUZAMENTO_CUBO)
         ang = blt.fechar_garra()
-        if ang > 145: #! constantizar
+        if ang > ANG_LIMIAR_GARRA_FECHADA:
             LOG("procura: cel livre fechou tudo")
             tira_obstaculo(cel_destino)
             achar_cruzamento_linha(dist_max=TAM_QUARTEIRÃO)
@@ -962,7 +991,7 @@ def descobrir_cor_caçambas():
     acertar_orientação("S")
 
     #gambiarra ver o 1 com cor incerta
-    pid_caçamba = pid(kp=0.5)
+    pid_caçamba, _ = pid(kp=0.5)
     andar_dist_linha(DIST_ALINHO, vel=20, pid=pid_caçamba)
     andar_dist_linha(DIST_BORDA_CAÇAMBA - DIST_ALINHO, pid=pid_caçamba)
 
