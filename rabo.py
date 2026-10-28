@@ -60,7 +60,7 @@ def setup():
 
     i2c = [
         I2C(0, scl=Pin(19), sda=Pin(21), freq=100000),
-        I2C(1, scl=Pin(25), sda=Pin(26), freq=100000),
+        I2C(1, scl=Pin(33), sda=Pin(25), freq=100000),
     ]
 
     sensor_caçamba = TCS34725(i2c[0])
@@ -80,6 +80,8 @@ def main(hub):
     while True:
         cor_garra   = sensor_cubo.cor()
         cor_caçamba = sensor_caçamba.cor()
+        
+        
 
         LOG(f"caçamba: {Cor(cor_caçamba)}\t",
               f"garra: {Cor(cor_garra)}")
