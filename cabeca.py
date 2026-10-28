@@ -148,6 +148,7 @@ def main():
         LOG("main: resetou", conta_reset, "vezes")
         blt.levantar_garra()
         blt.retrair_plataforma()
+
         posicionamento_inicial()
         pos_estimada = (0,0)
 
@@ -491,6 +492,13 @@ def inverte_orientação(ori=None):
 
     return ori #!< não é pra chegar aqui
 
+def dar_meia_volta():
+    global orientação_estimada
+    rodas.turn(180)
+
+    orientação_estimada = inverte_orientação()
+    LOG(f"dar_meia_volta: {orientação_estimada=}")
+
 def dar_meia_volta_linha():
     global orientação_estimada
 
@@ -683,10 +691,7 @@ def até_dist_max(dist_max):
 
 def até_dist_max_ou_cruzamento(dist_max):
     def func(dist, esq, centro, dir, preto):
-        cruzamento = (
-            dist >= 80
-            and até_cruzamento(dist, esq, centro, dir, preto)
-        )
+        cruzamento =  até_cruzamento(dist, esq, centro, dir, preto)
         return cruzamento or dist >= dist_max
     return func
 '''def até_dist_max_ou_cruzamento(dist_max):
@@ -1345,6 +1350,29 @@ def procura(pos_estimada, cores_caçambas):
         if cor == Cor.NENHUMA: continue
         if cel_atual == (y0,x0): continue
 
+        # vê se tem alguma coisa na frente
+        andar_dist_linha(DIST_CRUZAMENTO_CUBO)
+
+        cor = blt.ver_cor_cubo()
+        blt.mostrar_cor(cor)
+        if cor == Cor.enum.BRANCO:
+            bipes.cabeca()
+        if cor == Cor.enum.NENHUMA:
+            LOG("procura: cel livre viu cor.NENHUMA*")
+            tira_obstaculo(cel_destino)
+            achar_cruzamento_linha(dist_max=TAM_QUARTEIRÃO)
+            cel_atual = cel_destino
+            blt.abrir_garra()
+            continue
+        if ((cor not in cores_caçambas) or
+            (cubos_caçambas[cores_caçambas.index(cor)] >= NUM_CUBOS_PEGÁVEIS)):
+            LOG(f"procura: cubo desconhecido cor {cor}")
+            coloca_obstaculo(cel_destino)
+            dar_ré(DIST_VOLTAR_CUBO) #!
+            blt.abrir_garra()
+            dar_ré(DIST_CRUZAMENTO_CUBO)
+            continue
+
         imprimir_mapa()
 
         LOG(f"procura: cubo cor {cor}")
@@ -1367,15 +1395,9 @@ def descobrir_cor_caçambas():
     acertar_orientação("S")
 
     #gambiarra ver o 1 com cor incerta
-<<<<<<< HEAD
     pid_caçamba = pid(kp=0.5)
     andar_dist_linha(DIST_ALINHO, vel=20, pid=pid_caçamba, caçamba=True)
     andar_dist_linha(DIST_BORDA_CAÇAMBA - DIST_ALINHO, pid=pid_caçamba, caçamba=True)
-=======
-    pid_caçamba, _ = pid(kp=0.5)
-    andar_dist_linha(DIST_ALINHO, vel=20, pid=pid_caçamba)
-    andar_dist_linha(DIST_BORDA_CAÇAMBA - DIST_ALINHO, pid=pid_caçamba)
->>>>>>> 89780af (vel adaptativa funcionando com essa vel específica)
 
     for i in range(NUM_CAÇAMBAS):
         cores_caçambas[i] = blt.ver_cor_caçamba()
