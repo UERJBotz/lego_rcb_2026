@@ -19,9 +19,10 @@ def fecha_garra(vel=240):
     globais.motor_garra.run_angle(vel, 30, then=Stop.COAST, wait=False)
     return ang
 
-def abre_garra(vel=240, ang_volta=60): #ang_volta=72
+def abre_garra(vel=240, ang_volta=85): #ang_volta=72
     globais.motor_garra.run_angle(vel, -ang_volta, then=Stop.COAST, wait=False)
-
+    #globais.motor_garra.run_until_stalled(vel, then=Stop.COAST, duty_limit=None)
+    
 def levanta_garra(vel=240):
     globais.motor_vertical.run_until_stalled(vel, then=Stop.COAST, duty_limit=None)
     #globais.motor_vertical.run_angle(vel, ANG_SUBIR_GARRA, then=Stop.COAST, wait=True)

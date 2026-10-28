@@ -122,7 +122,7 @@ def main():
     while True:
         LOG("main: resetou", conta_reset, "vezes")
         blt.resetar_garra()
-        blt.abaixar_garra()
+        #blt.abaixar_garra()
         posicionamento_inicial()
         pos_estimada = (0,0)
 
@@ -315,6 +315,13 @@ def inverte_orientação(ori=None):
 
     return ori #!< não é pra chegar aqui
 
+def dar_meia_volta():
+    global orientação_estimada
+    rodas.turn(180)
+
+    orientação_estimada = inverte_orientação()
+    LOG(f"dar_meia_volta: {orientação_estimada=}")
+
 def dar_meia_volta_linha():
     global orientação_estimada
 
@@ -457,10 +464,7 @@ def até_dist_max(dist_max):
 
 def até_dist_max_ou_cruzamento(dist_max):
     def func(dist, esq, centro, dir, preto):
-        cruzamento = (
-            dist >= 80
-            and até_cruzamento(dist, esq, centro, dir, preto)
-        )
+        cruzamento =  até_cruzamento(dist, esq, centro, dir, preto)
         return cruzamento or dist >= dist_max
     return func
 '''def até_dist_max_ou_cruzamento(dist_max):
@@ -918,7 +922,7 @@ def procura(pos_estimada, cores_caçambas):
     ))
 
     blt.resetar_garra()
-    blt.abaixar_garra()
+    #blt.abaixar_garra()
     for cel_destino in cel_incertas:
         LOG("tentando de", cel_atual, "até :", cel_destino)
 
@@ -957,6 +961,7 @@ def procura(pos_estimada, cores_caçambas):
             tira_obstaculo(cel_destino)
             achar_cruzamento_linha(dist_max=TAM_QUARTEIRÃO)
             cel_atual = cel_destino
+            blt.abrir_garra()
             continue
         if ((cor not in cores_caçambas) or
             (cubos_caçambas[cores_caçambas.index(cor)] >= NUM_CUBOS_PEGÁVEIS)):
