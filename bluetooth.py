@@ -76,6 +76,7 @@ def esperar_resposta(esperado, canal=TX_BRACO):
 def resetar_garra():
     levantar_garra()
     fechar_garra()
+    abaixar_garra()
     abrir_garra()
 
 def fechar_garra():
