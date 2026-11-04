@@ -60,7 +60,7 @@ def setup():
 
     i2c = [
         I2C(0, scl=Pin(19), sda=Pin(21), freq=100000),
-        I2C(1, scl=Pin(25), sda=Pin(26), freq=100000),
+        I2C(1, scl=Pin(33), sda=Pin(25), freq=100000),
     ]
 
     sensor_caçamba = TCS34725(i2c[0])
