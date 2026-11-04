@@ -23,6 +23,10 @@ from comum import globais, bipes, luzes
 from comum import LOG, ERRO, ASSERT
 
 
+BOTÃO_PAUSA    = Button.CENTER
+BOTÃO_CONTINUA = Button.CENTER
+BOTÕES_DESLIGA = {Button.LEFT}
+
 NUM_CUBOS_PEGÁVEIS = 2
 
 ANG_LIMIAR_GARRA_FECHADA = 150
@@ -83,7 +87,7 @@ def setup():
     hub = PrimeHub(broadcast_channel=blt.TX_CABECA,
                    observe_channels=[blt.TX_BRACO, blt.TX_RABO],
                    front_side=Axis.X, top_side=Axis.Z)
-    hub.system.set_stop_button(Button.CENTER)
+    hub.system.set_stop_button(BOTÃO_PAUSA)
     globais.init(hub, TESTE, DEBUG, nome="cabeça")
 
     orientação_estimada = ""
@@ -171,7 +175,7 @@ def test():
     global orientação_estimada, pos_estimada, na_grade, cores_caçambas
     ... # testar coisas aqui sem mudar o resto do código
     blt.SILENCIOSO = True
-    
+
     while False:
         cor = blt.ver_cor_cubo()
         print(cor)
@@ -200,10 +204,12 @@ def test():
 
     if False: testes.imprimir_cor_cubo_para_sempre()
     if False: testes.imprimir_cor_caçamba_para_sempre()
+    if False: testes.ver_cores_caçambas_até_vermelho()
 
     while False:
-        if True: vel = 50 # mudar quando testar
-        else:    vel, *_ = rodas.settings()
+        if False: vel = 70 # mudar pra testar
+        else:
+            vel, *_ = rodas.settings()
 
         for _ in range(5):
             achar_cruzamento_linha(vel=vel)
@@ -239,7 +245,7 @@ def test():
     if False: tira_obstaculo((3,3))
     if False: tira_obstaculo((4,4))
 
-    if True:
+    if False:
         cores_caçambas = [
             Cor.enum.NENHUMA for _ in range(NUM_CAÇAMBAS)
         ]
@@ -467,14 +473,25 @@ def até_dist_max_ou_cruzamento(dist_max):
         )
     return func
 
-def dar_ré_linha(dist, **kwargs):
-    seguir_linha_até(até_dist_max(dist), vel=-70, **kwargs) #! vel hardcoded
+def ou(*funcs):
+    def f(*args, **kwargs):
+        for func in funcs: #! any
+            if func(*args, **kwargs): return True
+        return False
+    return f
 
-def dar_ré_achar_cruzamento_linha(*, dist_max=TAM_PISTA_TODA, **kwargs):
-    seguir_linha_até(até_dist_max_ou_cruzamento(dist_max), vel=-70, **kwargs) #! vel hardcoded
+def dar_ré_linha(dist, vel=70, **kwargs):
+    dir_linha.mul = -dir_linha.mul
+    seguir_linha_até(bom=até_dist_max(dist),
+                     ruim=None, vel=-vel, **kwargs)
+    dir_linha.mul = -dir_linha.mul
+
+def dar_ré_achar_cruzamento_linha(*, vel=70, dist_max=TAM_PISTA_TODA, **kwargs):
+    seguir_linha_até(até_dist_max_ou_cruzamento(dist_max),
+                     vel=-vel, **kwargs)
 
 def andar_dist_linha(dist, **kwargs):
-    seguir_linha_até(até_dist_max(dist), **kwargs)
+    return seguir_linha_até(até_dist_max(dist), **kwargs)
 
 def achar_cruzamento_linha(*, dist_max=TAM_PISTA_TODA, **kwargs):
     seguir_linha_até(até_dist_max_ou_cruzamento(dist_max), **kwargs)
@@ -494,9 +511,18 @@ def pid(kp, kd=0, ki=0):
         return ativ
     return f
 
+def viu_cor_dupla(*args):
+    def f():
+        esq, dir = cores.todas(sensor_cor_esq,
+                               sensor_cor_dir)
+        for cor in args:
+            if esq == cor and dir == cor: return True
+        return False
+    return f
+
 pid_linha = pid(kp=0.50)
-def seguir_linha_até(parada=até_dist_max_ou_cruzamento(TAM_PISTA_TODA),
-                     *, vel=None, pid=None, parar_no_verde=False):
+def seguir_linha_até(bom=até_dist_max_ou_cruzamento(TAM_PISTA_TODA),
+                     ruim=None, *, vel=None, pid=None):
     if vel is None: vel = VEL_SEGUIR_LINHA
     if pid is None: pid = pid_linha
 
@@ -515,21 +541,19 @@ def seguir_linha_até(parada=até_dist_max_ou_cruzamento(TAM_PISTA_TODA),
         erro = dir_linha.mul * (REFL_IDEAL - centro)
         rodas.drive(vel, pid(erro))
 
-        if parada(rodas.distance(), esq, centro, dir, preto): break
-        if parar_no_verde: #! isso era o erro do bipe eterno, ver se precisa
-            esq, dir = cores.todas(sensor_cor_esq, sensor_cor_dir)
-            if esq == Cor.enum.VERDE    and dir == Cor.enum.VERDE: break
-            if esq == Cor.enum.VERMELHO and dir == Cor.enum.VERMELHO: break #! parar no vermelho
+        dist = rodas.distance()
+        if bom(dist, esq, centro, dir, preto):
+            return rodas.stop() or True
+        if ruim and ruim():
+            return rodas.stop() or False
 
-    rodas.stop()
-
-def curva_linha_esquerda():
+def curva_linha_esquerda(raio=DIST_EIXO_SENSOR):
     dir_linha.mul = dir_linha.DIR
-    rodas.curve(DIST_EIXO_SENSOR, -90)
+    rodas.curve(raio, -90)
 
-def curva_linha_direita():
+def curva_linha_direita(raio=DIST_EIXO_SENSOR):
     dir_linha.mul = dir_linha.ESQ
-    rodas.curve(DIST_EIXO_SENSOR, +90)
+    rodas.curve(raio, +90)
 
 
 def alinha_parede(vel, vel_ang, giro_max=45,
@@ -539,7 +563,7 @@ def alinha_parede(vel, vel_ang, giro_max=45,
     desalinhado_branco = lambda esq, dir: Cor.branco(esq) ^ Cor.branco(dir)
     alinhado_não_pista = lambda esq, dir: ((not func_cor_pista(esq)) and
                                            (not func_cor_pista(dir)))
-    
+
     alinhado_pista  = lambda esq, dir: func_cor_pista(esq) and func_cor_pista(dir)
     alinhado_parede = lambda esq, dir: alinhado_não_pista(esq, dir) and not desalinhado_branco(esq, dir)
 
@@ -550,7 +574,7 @@ def alinha_parede(vel, vel_ang, giro_max=45,
             (dist,) = extra
             LOG(f"alinha_parede: reto pista {dist}")
             return False, extra # viu só branco, não sabemos se tá alinhado
-    
+
         (esq, dir) = extra
         if  alinhado_parede(esq, dir):
             LOG(f"alinha_parede: reto não pista {esq}, {dir}")
@@ -949,6 +973,7 @@ def procura(pos_estimada, cores_caçambas):
 
     SucessoOuCatástrofe("sem caminhos possíveis")
 
+pid_caçamba = pid(kp=0.5)
 def descobrir_cor_caçambas():
     global cores_caçambas
     if not cores_caçambas:
@@ -962,7 +987,6 @@ def descobrir_cor_caçambas():
     acertar_orientação("S")
 
     #gambiarra ver o 1 com cor incerta
-    pid_caçamba = pid(kp=0.5)
     andar_dist_linha(DIST_ALINHO, vel=20, pid=pid_caçamba)
     andar_dist_linha(DIST_BORDA_CAÇAMBA - DIST_ALINHO, pid=pid_caçamba)
 
@@ -972,14 +996,12 @@ def descobrir_cor_caçambas():
         dist = blt.ver_dist_caçamba()
 
         #! rataria cores caçambas
-        if cores_caçambas[i].cor == Cor.enum.MARROM:
-            cores_caçambas[i] = Cor(cor=Cor.enum.AMARELO)
         #if cores_caçambas[i].cor == Cor.enum.PRETO:
         #    if False: cores_caçambas[i] = Cor(cor=Cor.enum.AZUL)
         #    else:    cores_caçambas[i] = Cor(cor=Cor.enum.VERDE)
-        if cores_caçambas[i].cor == Cor.enum.NENHUMA:
-            if dist < TAM_QUARTEIRÃO:
-                cores_caçambas[i] = Cor(cor=Cor.enum.PRETO)
+        #if cores_caçambas[i].cor == Cor.enum.NENHUMA:
+        #    if dist < TAM_QUARTEIRÃO:
+        #        cores_caçambas[i] = Cor(cor=Cor.enum.PRETO)
 
         LOG(f"descobrir_cor_caçamba: caçamba {cores_caçambas[i]} a {dist/10}cm")
 
@@ -989,13 +1011,45 @@ def descobrir_cor_caçambas():
     rodas.turn(10)
     dar_ré(TAM_BLOCO//4)
     rodas.turn(-20)
-   
+
 class testes:
     @staticmethod
     def imprimir_cor_caçamba_para_sempre():
         while True:
             cor = blt.ver_cor_caçamba()
             print(cor)
+
+    @staticmethod
+    def ver_cores_caçambas_até_vermelho():
+        def dar_meia_volta_linha():
+            dar_meia_volta()
+            dir_linha.mul = -dir_linha.mul
+
+            LOG(f"dar_meia_volta_linha*: {orientação_estimada=}")
+        # jeito diferente de entrar na caçambagem
+        achar_não_verde_alinhado()
+        curva_linha_esquerda(DIST_EIXO_SENSOR/5)
+
+        DIST_ALINHO = TAM_BLOCO//2
+        andar_dist_linha(DIST_ALINHO, vel=20)
+
+        dist = 20
+        while True:
+            tam_total = TAM_BLOCO*10
+            num_movs = (tam_total-TAM_BLOCO)//dist
+            for _ in range(num_movs):
+                bipes.cabeca()
+                cor  = blt.ver_cor_caçamba()
+                dist = blt.ver_dist_caçamba()
+                LOG(f"cor caçamba {cor} a {dist/10}cm")
+
+                if not andar_dist_linha(20, vel=80): break
+            dar_ré(DIST_EIXO_SENSOR_TRAS)
+            dar_meia_volta_linha()
+            seguir_linha_até(até_dist_max(tam_total),
+                             vel=100)
+            dar_ré(DIST_EIXO_SENSOR_TRAS)
+            dar_meia_volta_linha()
 
     @staticmethod
     def imprimir_dist_caçamba_pra_sempre():
@@ -1037,6 +1091,7 @@ if __name__ == "__main__":
         except SystemExit:
             hub.system.set_stop_button(None)
             LOG("pedindo parada")
+
             rodas.reset()
             luzes.reset()
             bipes.cabeca()
@@ -1046,10 +1101,13 @@ if __name__ == "__main__":
 
             wait(300)
             bots = set()
-            while Button.CENTER not in bots:
+            while BOTÃO_CONTINUA not in bots:
                 bots = hub.buttons.pressed()
-                if Button.LEFT  in bots: pass
-                if Button.RIGHT in bots: pass
+                if BOTÕES_DESLIGA <= bots:
+                    raise SystemExit
+
+                if Button.RIGHT     in bots: pass
+                if Button.BLUETOOTH in bots: pass
 
             LOG("reiniciando")
             hub.system.set_stop_button(Button.CENTER)
