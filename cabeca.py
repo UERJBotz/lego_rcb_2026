@@ -200,6 +200,7 @@ def test():
 
     if False: testes.imprimir_cor_cubo_para_sempre()
     if False: testes.imprimir_cor_caçamba_para_sempre()
+    if False: testes.testar_combinações_movimentos_pra_sempre()
 
     while False:
         if True: vel = 50 # mudar quando testar
@@ -660,16 +661,16 @@ def seguir_caminho(caminho): #! lidar com outras coisas
     def interpretar_movimento_cidade(mov):
         #! fazer run length encoding aqui
         if   mov == tipo_movimento.FRENTE:
-            achar_cruzamento_linha(dist_max=TAM_BLOCO)
+            achar_cruzamento_linha(dist_max=TAM_BLOCO + 2*DIST_EIXO_SENSOR)
         elif mov == tipo_movimento.TRAS:
             dar_meia_volta_linha()
-            achar_cruzamento_linha(dist_max=TAM_BLOCO)
+            achar_cruzamento_linha(dist_max=TAM_BLOCO + 2*DIST_EIXO_SENSOR)
         elif mov == tipo_movimento.ESQUERDA_FRENTE:
             curva_linha_esquerda()
-            achar_cruzamento_linha(dist_max=DIST_EIXO_SENSOR)
+            achar_cruzamento_linha(dist_max=TAM_BLOCO + 2*DIST_EIXO_SENSOR)
         elif mov == tipo_movimento.DIREITA_FRENTE:
             curva_linha_direita()
-            achar_cruzamento_linha(dist_max=TAM_BLOCO)
+            achar_cruzamento_linha(dist_max=TAM_BLOCO + 2*DIST_EIXO_SENSOR)
         elif mov == tipo_movimento.ESQUERDA:
             curva_linha_esquerda()
         elif mov == tipo_movimento.DIREITA:
@@ -1018,6 +1019,42 @@ class testes:
             dist = blt.ver_dist_caçamba()
             cor  = blt.ver_cor_caçamba()
             print(f"dist: {dist}, cor: {cor}")
+
+    @staticmethod
+    def testar_combinações_movimentos_pra_sempre():
+        movimentos = [
+                tipo_movimento.FRENTE,
+                tipo_movimento.ESQUERDA_FRENTE,
+                tipo_movimento.TRAS,
+                tipo_movimento.DIREITA_FRENTE,
+                ]
+        
+        def interpretar_movimento_cidade(mov):
+            #! fazer run length encoding aqui
+            if   mov == tipo_movimento.FRENTE:
+                print("FRENTE", end = "->")
+                achar_cruzamento_linha(dist_max=TAM_BLOCO + 2*DIST_EIXO_SENSOR)
+            elif mov == tipo_movimento.TRAS:
+                print("TRAS", end = "->")
+                dar_meia_volta_linha()
+                achar_cruzamento_linha(dist_max=TAM_BLOCO + 2*DIST_EIXO_SENSOR)
+            elif mov == tipo_movimento.ESQUERDA_FRENTE:
+                print("ESQUERDA_FRENTE", end = "->")
+                curva_linha_esquerda()
+               # virar_esquerda()
+                achar_cruzamento_linha(dist_max=TAM_BLOCO + 2*DIST_EIXO_SENSOR)
+            elif mov == tipo_movimento.DIREITA_FRENTE:
+                print("DIREITA_FRENTE", end = "->")
+                curva_linha_direita()
+               # virar_direita()
+                achar_cruzamento_linha(dist_max=TAM_BLOCO + 2*DIST_EIXO_SENSOR)
+
+        while True:
+            for mov1 in movimentos:
+                for mov2 in movimentos:
+                    interpretar_movimento_cidade(mov1)
+                    interpretar_movimento_cidade(mov2)
+                    print()
 
 
 conta_reset = 0
