@@ -80,8 +80,6 @@ def main(hub):
     while True:
         cor_garra   = sensor_cubo.cor()
         cor_caçamba = sensor_caçamba.cor()
-        
-        
 
         LOG(f"caçamba: {Cor(cor_caçamba)}\t",
               f"garra: {Cor(cor_garra)}")
