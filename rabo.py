@@ -1,7 +1,7 @@
 import blt
 
 from time import ticks_ms as millis, sleep_ms as delay
-from machine import I2C, Pin
+from machine import I2C, Pin, PWM
 from bleradio import BLERadio
 from tcs3472 import TCS34725
 
@@ -20,6 +20,31 @@ Cor = Enum("Cor", ["NENHUMA",
                    "VERMELHO",
                    "BRANCO",
                    "MARROM"])
+
+def clamp(x, m,M):
+    return min(max(x, m), M)
+
+def map_interval(x, m,M, MIN,MAX):
+    return MIN + (x-m)*(MAX-MIN)/(M-m)
+
+def map_interval_clamped(x, m,M, MIN,MAX):
+    return clamp(map_interval(x, m,M, MIN,MAX), MIN, MAX)
+
+class Servo(PWM):
+    def __init__(self, pin, min_angle=0,   max_angle=90,
+                            min_pulse=300, max_pulse=1000):
+        super().__init__(pin)
+        self.freq(50)
+        self.duty(0)
+
+        self.min_pulse = min_pulse
+        self.max_pulse = max_pulse
+        self.min_angle = min_angle
+        self.max_angle = max_angle
+
+    def angle(self, ang):
+        self.duty_ns(int(map_interval_clamped(ang, self.min_angle, self.max_angle,
+                                                   self.min_pulse, self.max_pulse))*1000)
 
 class Led(Pin):
     def __init__(self, pin):
@@ -68,6 +93,10 @@ def setup():
 
     LOG(f"i2c: caçamba{sensor_caçamba.i2c.scan()},",
                 f"cubo{sensor_cubo.i2c.scan()}")
+
+    servos = [
+        Servo(Pin(17)), Servo(Pin(5)), Servo(Pin(18)),
+    ]
 
     timer = millis()
     return hub
