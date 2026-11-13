@@ -45,6 +45,8 @@ class Servo(PWM):
     def angle(self, ang):
         self.duty_ns(int(map_interval_clamped(ang, self.min_angle, self.max_angle,
                                                    self.min_pulse, self.max_pulse))*1000)
+    def off(self):
+        self.duty(0)
 
 class Led(Pin):
     def __init__(self, pin):
@@ -73,7 +75,7 @@ class NoneHub(coringa): #! fazer direito
 
 
 def setup():
-    global hub, timer, led, sensor_caçamba, sensor_cubo
+    global hub, timer, led, sensor_caçamba, sensor_cubo, servos
 
     hub = NoneHub(broadcast_channel=blt.TX_RABO,
                   observe_channels=[blt.TX_CABECA])
@@ -97,6 +99,14 @@ def setup():
     servos = [
         Servo(Pin(17)), Servo(Pin(5)), Servo(Pin(18)),
     ]
+    for s in servos: s.angle(0)
+
+    while True:
+        dt = 500
+        for s in servos: s.angle(0)
+        delay(dt)
+        for s in servos: s.angle(90)
+        delay(dt)
 
     timer = millis()
     return hub
