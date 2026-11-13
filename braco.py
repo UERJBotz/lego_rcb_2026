@@ -28,10 +28,8 @@ def setup():
     hub.display.orientation(Side.BOTTOM)
     globais.init(hub, TESTE, DEBUG, nome="braço")
 
-    globais.motor_garra    = Motor(Port.B, Direction.COUNTERCLOCKWISE)
-    globais.motor_vertical = Motor(Port.A, Direction.COUNTERCLOCKWISE)
-
-    sensor_dist_dir = UltrasonicSensor(Port.E)
+    #! globais.motor_garra    = Motor(Port.B, Direction.COUNTERCLOCKWISE)
+    #! globais.motor_vertical = Motor(Port.A, Direction.COUNTERCLOCKWISE)
 
     LOG("ligando arduino")
     try:
