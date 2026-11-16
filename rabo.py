@@ -50,10 +50,12 @@ class Servo(PWM):
         self.duty(0)
 
 class Led(Pin):
-    def __init__(self, pin):
+    def __init__(self, pin, invert=True):
         super().__init__(pin, Pin.OUT)
-    def on(self):  self.value(0)
-    def off(self): self.value(1)
+        self.invert = invert
+
+    def on(self):  self.value(1 ^ self.invert)
+    def off(self): self.value(0 ^ self.invert)
     def toggle(self):
         self.value(self.value()^1)
 
@@ -84,7 +86,7 @@ def setup():
 
     globais.init(hub, True, True, nome="rabo")
 
-    led = Led(2); led.on()
+    led = Led(2, invert=False); led.on()
 
     i2c_cubo    = I2C(1, scl=Pin(33), sda=Pin(25), freq=100000)
     i2c_caçamba = I2C(0, scl=Pin(19), sda=Pin(21), freq=100000)
