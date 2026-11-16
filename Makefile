@@ -62,6 +62,8 @@ rabo:: firmware/bleradio.py
 	$(AMPY) --port /dev/ttyUSB0 put $<
 rabo:: firmware/tcs3472.py
 	$(AMPY) --port /dev/ttyUSB0 put $<
+rabo:: firmware/vl53l0x.py
+	$(AMPY) --port /dev/ttyUSB0 put $<
 rabo:: rabo.py
 	$(AMPY) --port /dev/ttyUSB0 put $< main.py
 

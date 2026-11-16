@@ -110,9 +110,13 @@ class TimeoutError(RuntimeError):
 
 
 class VL53L0X():
-    def __init__(self, i2c, address=0x29):
+    DEFAULT_ADDR = 0x29
+
+    def __init__(self, i2c, address=DEFAULT_ADDR, custom_address=None):
         self.i2c = i2c
         self.address = address
+        if custom_address:
+            self.change_i2c_address(custom_address)
         utime.sleep_ms(100) # give the I2C time to init
         self.init()
         self._started = False
@@ -139,6 +143,11 @@ class VL53L0X():
         distance = self.read()
         self.stop()
         return distance
+
+    def change_i2c_address(self, address, force=False):
+        if force or address not in self.i2c.scan():
+            self._register(0x8A, address)
+        self.address = address
 
     def _registers(self, register, values=None, struct='B'):
         if values is None:
@@ -643,10 +652,9 @@ class VL53L0X():
         return True
 
     def perform_single_ref_calibration(self, vhv_init_byte):
-        
         # Pico MicroPython doesn't have a Chrono class, so the line below is commented out
         # chrono = Timer.Chrono()
-        
+
         self._register(SYSRANGE_START, 0x01|vhv_init_byte)
 
         # Instead of using the chrono class, I'll just capture the current time
