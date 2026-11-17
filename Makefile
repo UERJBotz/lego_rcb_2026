@@ -30,8 +30,8 @@ braco_imediato:
 .PHONY: teste cabeca_teste braco_teste
 teste: cabeca_teste braco_teste
 
-TESTE_BRACO  = .__teste_braco__.py
-TESTE_CABECA = .__teste_cabeca__.py
+TESTE_BRACO  = "__teste_braco__.py"
+TESTE_CABECA = "__teste_cabeca__.py"
 
 cabeca_teste: $(TESTE_CABECA)
 	$(PYBRICKS) run ble --name $(NOME_CABECA) $<
