@@ -273,7 +273,14 @@ def test():
         return
 
     if True:
-        main()
+        blt.abaixar_garra()
+        bipes.separador()
+        blt.levantar_garra()
+
+        bipes.separador()
+        blt.estender_plataforma()
+        bipes.separador()
+        blt.retrair_plataforma()
 
     LOG("fim do teste")
 

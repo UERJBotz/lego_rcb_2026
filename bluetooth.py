@@ -26,6 +26,8 @@ cmd = Enum("cmd", [
     "ver_dist_sensor_braco", #! reordenar
     "levanta_garra_dist_sensor", #! reordenar
     "mostrar_cor",
+    "estende_plataforma",
+    "retrai_plataforma",
 ])
 
 rsp = Enum("rsp", [
@@ -40,6 +42,8 @@ rsp = Enum("rsp", [
     "dist_sensor_braco", #! reordenar
     "levantei_dist_sensor", #! reordenar
     "mostrei_cor",
+    "estendi",
+    "retrai",
 ])
 
 #! mudar alguns nomes depois
@@ -110,3 +114,11 @@ def ver_dist_caçamba():
 def mostrar_cor(cor):
     enviar_comando(cmd.mostrar_cor, cor.cor)
     return esperar_resposta(rsp.mostrei_cor)
+
+def estender_plataforma():
+    enviar_comando(cmd.estende_plataforma)
+    return esperar_resposta(rsp.estendi)
+
+def retrair_plataforma():
+    enviar_comando(cmd.retrai_plataforma)
+    return esperar_resposta(rsp.retrai)

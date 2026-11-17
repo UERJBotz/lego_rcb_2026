@@ -16,12 +16,13 @@ import garra
 #! se a gente girar a garra na mão, mesmo resetando a cabeça, o estado da garra no braço se mantém e a gente se fode.
 
 def setup():
-    global garra_fechada, garra_levantada, garra_altura_sensor
+    global garra_fechada, garra_levantada, garra_altura_sensor, plataforma_estendida
     global sensor_dist_dir
 
     garra_levantada = False
     garra_fechada   = False
     garra_altura_sensor = False
+    plataforma_estendida= False
 
     hub = PrimeHub(broadcast_channel=blt.TX_BRACO,
                    observe_channels=[blt.TX_CABECA])
@@ -30,6 +31,8 @@ def setup():
 
     #! globais.motor_garra    = Motor(Port.B, Direction.COUNTERCLOCKWISE)
     #! globais.motor_vertical = Motor(Port.A, Direction.COUNTERCLOCKWISE)
+    globais.motor_guindaste = Motor(Port.C, Direction.COUNTERCLOCKWISE)
+    globais.motor_plataforma = Motor(Port.D, Direction.CLOCKWISE)
 
     LOG("ligando arduino")
     try:
@@ -43,7 +46,7 @@ def setup():
     return hub
 
 def main():
-    global garra_fechada, garra_levantada, garra_altura_sensor
+    global garra_fechada, garra_levantada, garra_altura_sensor, plataforma_estendida
 
     cmd = None
     while True:
@@ -95,10 +98,40 @@ def main():
             cor, = args
             luzes.mostrar(Cor(cor = cor).color)
             blt.enviar_comando(blt.rsp.mostrei_cor)
+
+        elif comando == blt.cmd.estende_plataforma:
+            if not plataforma_estendida:
+                LOG("estendendo")
+                garra.estende_plataforma()
+                plataforma_estendida = True
+            blt.enviar_comando(blt.rsp.estendi)
+        elif comando == blt.cmd.retrai_plataforma:
+            if plataforma_estendida:
+                LOG("retraindo")
+                garra.retrai_plataforma()
+                plataforma_estendida = False
+            blt.enviar_comando(blt.rsp.retrai)
+
 def test():
     ... # testar coisas aqui sem mudar o resto do código
-    mapa_hsv = menu_calibração(sensor_cor_frente)
-    cores.repl_calibração(mapa_hsv, lado="frente")
+    from pybricks.parameters import Stop
+ 
+    motor_guindaste = Motor(Port.C, Direction.COUNTERCLOCKWISE)
+                            
+    cm_grau = 63/6000 #.0105 cm/º
+    grau_cm = 6000/63 # 95.2 º/cm
+                            
+    ANG_SUBIR_GARRA = 63*grau_cm
+    VEL_SUBIR_GARRA = 800   
+                            
+    def levanta_garra(vel=VEL_SUBIR_GARRA):
+        motor_guindaste.run_angle(vel, ANG_SUBIR_GARRA, then=Stop.HOLD, wait=True)
+ 
+    def abaixa_garra(vel=VEL_SUBIR_GARRA):
+        motor_guindaste.run_angle(-vel, ANG_SUBIR_GARRA, then=Stop.HOLD, wait=True)
+ 
+    levanta_garra()
+    abaixa_garra()
 
 def menu_calibração(*sensores, botao_parar=Button.BLUETOOTH,
                                botao_aceitar=Button.CENTER,
