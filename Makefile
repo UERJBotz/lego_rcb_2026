@@ -55,7 +55,9 @@ rabo:: comum.py
 rabo:: cores.py
 	$(AMPY) --port /dev/ttyUSB0 put $<
 rabo:: lib/polyfill.py
-	$(AMPY) --port /dev/ttyUSB0 put $< $<
+	$(AMPY) --port /dev/ttyUSB0 put $< $<	
+rabo:: firmware/cores_calibradas.py
+	$(AMPY) --port /dev/ttyUSB0 put $<
 rabo:: firmware/boot.py
 	$(AMPY) --port /dev/ttyUSB0 put $<
 rabo:: firmware/bleradio.py

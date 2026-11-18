@@ -122,11 +122,10 @@ def setup():
     servo_garra, *_ = servos = [
         Servo(Pin(17)), Servo(Pin(18))
     ]
-    servo_garra.angle(ANG_GARRA_ABERTA, wait=200)
+    #servo_garra.angle(ANG_GARRA_ABERTA, wait=200)
     for s in servos: s.off()
 
     barra_led = NeoPixel(Pin(5), 12)
-
     timer = millis()
     return hub
 
@@ -137,12 +136,12 @@ def main(hub):
     cor_caçamba = cor_garra = 0
     while True:
         cor_cubo    = sensor_cubo.cor()
-        cor_caçamba = sensor_caçamba.cor()
-        dist_cubo   = sensor_dist_cubo.ping()
-
-        LOG(f"caçamba: {Cor(cor_caçamba)}\t",
-              f"garra: {Cor(cor_cubo)}\t",
-               f"dist: {dist_cubo}mm")
+    #    cor_caçamba = sensor_caçamba.cor()
+    #    dist_cubo   = sensor_dist_cubo.ping()
+        LOG(f"{Cor(cor_caçamba)}")
+        #LOG(f"caçamba: {Cor(cor_caçamba)}\t",
+        #    f"garra: {Cor(cor_cubo)}\t",
+        #       f"dist: {dist_cubo}mm")
 
         if (millis() - timer) > 1000:
             timer = millis()
@@ -175,7 +174,7 @@ def main(hub):
 
 
 if __name__ == "__main__":
-    if False: # DEBUG
+    if True: # DEBUG
         LOG("MODO DEBUG"); main(setup());
         raise KeyboardInterrupt
 
