@@ -13,8 +13,6 @@ import cores
 import garra
 
 
-#! se a gente girar a garra na mão, mesmo resetando a cabeça, o estado da garra no braço se mantém e a gente se fode.
-
 def setup():
     global garra_fechada, garra_levantada, garra_altura_sensor, plataforma_estendida
     global sensor_dist_dir
@@ -57,19 +55,6 @@ def main():
 
         if cmd != antes:
             LOG(f"{blt.cmd(comando)}{args}")
-
-        if   comando == blt.cmd.fecha_garra:
-            if not garra_fechada:
-                LOG("fechando")
-                ang = garra.fecha_garra()
-                garra_fechada = True
-            blt.enviar_comando(blt.rsp.fechei, ang)
-        elif comando == blt.cmd.abre_garra:
-            if garra_fechada:
-                LOG("abrindo")
-                garra.abre_garra()
-                garra_fechada = False
-            blt.enviar_comando(blt.rsp.abri)
 
         elif comando == blt.cmd.levanta_garra:
             if not garra_levantada:
@@ -115,21 +100,21 @@ def main():
 def test():
     ... # testar coisas aqui sem mudar o resto do código
     from pybricks.parameters import Stop
- 
+
     motor_guindaste = Motor(Port.C, Direction.COUNTERCLOCKWISE)
-                            
+
     cm_grau = 63/6000 #.0105 cm/º
     grau_cm = 6000/63 # 95.2 º/cm
-                            
+
     ANG_SUBIR_GARRA = 63*grau_cm
     VEL_SUBIR_GARRA = 800   
-                            
+
     def levanta_garra(vel=VEL_SUBIR_GARRA):
         motor_guindaste.run_angle(vel, ANG_SUBIR_GARRA, then=Stop.HOLD, wait=True)
- 
+
     def abaixa_garra(vel=VEL_SUBIR_GARRA):
         motor_guindaste.run_angle(-vel, ANG_SUBIR_GARRA, then=Stop.HOLD, wait=True)
- 
+
     levanta_garra()
     abaixa_garra()
 

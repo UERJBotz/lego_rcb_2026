@@ -78,11 +78,11 @@ def resetar_garra():
 
 def fechar_garra():
     enviar_comando(cmd.fecha_garra)
-    return esperar_resposta(rsp.fechei)
+    return esperar_resposta(rsp.fechei, canal=TX_RABO)
 
 def abrir_garra():
     enviar_comando(cmd.abre_garra)
-    return esperar_resposta(rsp.abri)
+    return esperar_resposta(rsp.abri, canal=TX_RABO)
 
 def levantar_garra():
     enviar_comando(cmd.levanta_garra)
