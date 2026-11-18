@@ -138,7 +138,17 @@ def main(hub):
     while True:
         cor_cubo    = sensor_cubo.cor()
         cor_caçamba = sensor_caçamba.cor()
-        dist_cubo   = sensor_dist_cubo.ping()
+        dist_cubo   = sensor_dist_cubo.ping() - 100 #! tem que ver porque tem 100 a mais
+
+        if dist_cubo <= 30:
+            #if cor_cubo == Cor.NENHUMA:
+            #    cor_cubo = Cor.BRANCO
+            pass
+        else:
+            cor_cubo = Cor.NENHUMA
+
+        #barra_led.fill(cor_to_rgb(cor_cubo))
+        #barra_led.write()
 
         LOG(f"caçamba: {Cor(cor_caçamba)}\t",
               f"garra: {Cor(cor_cubo)}\t",
@@ -168,14 +178,14 @@ def main(hub):
             blt.enviar_resposta(blt.rsp.abri)
         elif comando == blt.cmd.mostrar_cor:
             cor, = args
-            barra_led.fill(cor_to_rgb(cor))
+            barra_led.fill(cor_to_rgb(cor_cubo))
             barra_led.write()
             blt.enviar_comando
         #LOG(cor_to_rgb(cor_cubo))(blt.rsp.mostrei_cor)
 
 
 if __name__ == "__main__":
-    if False: # DEBUG
+    if True: # DEBUG
         LOG("MODO DEBUG"); main(setup());
         raise KeyboardInterrupt
 
