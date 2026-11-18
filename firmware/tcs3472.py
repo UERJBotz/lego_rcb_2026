@@ -67,8 +67,8 @@ class TCS34725:
     def _classificar_cor(hsv: tuple) -> cor:
         h, s, v = hsv
 
-        if (v <= 90 and s <= 90): return cor.BRANCO
-        if (h >= 20 and h <= 150) and (s <= 110 and v <= 100): return cor.PRETO
+        if (h >= 50 and h <= 91) and (v >= 90 and v <= 96): return cor.BRANCO
+        if (h >= 30 and h <= 150) and (s <= 110 and v <= 110): return cor.PRETO
 
         if (h >= 20 and h <= 50) and (s <= 150):            return cor.MARROM
         if (h >= 0 and h <= 10) or (h >= 330 and h <= 360): return cor.VERMELHO
