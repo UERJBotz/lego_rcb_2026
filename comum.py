@@ -14,7 +14,8 @@ class globais:
 
     # braço
     motor_garra = None
-    motor_vertical = None
+    motor_guindaste = None
+    motor_plataforma = None
 
     # comum
     hub = None
