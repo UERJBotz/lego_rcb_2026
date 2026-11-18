@@ -287,33 +287,41 @@ def test():
         bipes.separador()
 
     if True:
+        LOG("retrai_plataforma")
         blt.retrair_plataforma()
         bipes.separador()
 
+        LOG("abaixa_garra")
         blt.abrir_garra()
         blt.abaixar_garra()
         bipes.separador()
 
+        LOG("levanta_garra")
         blt.fechar_garra()
         blt.levantar_garra()
         bipes.separador()
 
+        LOG("estender_plataforma")
         blt.estender_plataforma()
+        LOG("mediar_garra")
+        blt.mediar_garra()
         blt.abrir_garra()
+        blt.levantar_garra()
+        bipes.separador()
+
+        LOG("retrai_plataforma")
         blt.retrair_plataforma()
         bipes.separador()
 
-        #blt.estender_plataforma()
-        #blt.abaixar_garra()
-        #blt.fechar_garra()
-        #blt.levantar_garra()
-        #bipes.separador()
+        LOG("estende_plataforma")
+        blt.estender_plataforma()
+        bipes.separador()
 
-        #blt.retrair_plataforma()
-        #blt.abaixar_garra()
-        #blt.abrir_garra()
-        #blt.levantar_garra()
-        #bipes.separador()
+        LOG("mediar_garra")
+        blt.mediar_garra()
+        blt.fechar_garra()
+        blt.levantar_garra()
+        bipes.separador()
 
     LOG("fim do teste")
 

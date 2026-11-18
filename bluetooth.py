@@ -28,13 +28,14 @@ cmd = Enum("cmd", [
     "mostrar_cor",
     "estende_plataforma",
     "retrai_plataforma",
+    "media_garra",
 ])
 
 rsp = Enum("rsp", [
     "fechei",
     "abri",
-    "levantei",
-    "abaixei",
+    "levantei_garra",
+    "abaixei_garra",
     "cor_sensor_braco",
     "hsv_sensor_braco",
     "distancias_deprecado", #! retirar quando mexer na ordem, fazer upload em tudo
@@ -44,6 +45,7 @@ rsp = Enum("rsp", [
     "mostrei_cor",
     "estendi",
     "retrai",
+    "mediei_garra",
 ])
 
 #! mudar alguns nomes depois
@@ -86,15 +88,19 @@ def abrir_garra():
 
 def levantar_garra():
     enviar_comando(cmd.levanta_garra)
-    return esperar_resposta(rsp.levantei)
+    return esperar_resposta(rsp.levantei_garra)
 
 def levantar_garra_dist_sensor():
-    enviar_comando(cmd.levanta_garra_dist_sensor)
-    return esperar_resposta(rsp.levantei_dist_sensor)
+    ASSERT(False, "levanta_garra_dist_sensor não existe")
+    return None
+
+def mediar_garra():
+    enviar_comando(cmd.media_garra)
+    return esperar_resposta(rsp.mediei_garra)
 
 def abaixar_garra():
     enviar_comando(cmd.abaixa_garra)
-    return esperar_resposta(rsp.abaixei)
+    return esperar_resposta(rsp.abaixei_garra)
 
 def ver_cor_cubo():
     enviar_comando(cmd.ver_cor_sensor_rabo)

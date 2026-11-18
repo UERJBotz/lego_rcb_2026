@@ -11,16 +11,12 @@ from comum import LOG, ERRO, ASSERT
 import bluetooth as blt
 
 import cores
-import garra
 
 
 grau_mm = 6000/630 # 9.52º/mm -> 95.2º/cm
-DIST_DESCER_GARRA = 160#mm
-ANG_DESCER_GARRA  = DIST_DESCER_GARRA*grau_mm
-VEL_DESCER_GARRA  = 800
-
-ALTURA_PLATAFORMA     = 100#mm
-ANG_ALTURA_PLATAFORMA = ALTURA_PLATAFORMA*grau_mm
+DESCIDA_MAX_GARRA  = 160#mm
+DESCIDA_PLATAFORMA = 80#mm
+VEL_DESCER_GARRA   = 800
 
 RAIO_ENGRENAGEM = 9#mm
 DIST_PLATAFORMA = 60#mm
@@ -28,12 +24,10 @@ ANG_PLATAFORMA  = DIST_PLATAFORMA*RAIO_ENGRENAGEM
 
 
 def setup():
-    global garra_fechada, garra_levantada, garra_altura_sensor, plataforma_estendida
+    global plataforma_estendida, descida_atual_garra
 
-    garra_levantada = True
-    garra_fechada   = False
-    garra_altura_sensor = False
-    plataforma_estendida= False
+    plataforma_estendida = False
+    descida_atual_garra = 0
 
     hub = PrimeHub(broadcast_channel=blt.TX_BRACO,
                    observe_channels=[blt.TX_CABECA])
@@ -47,7 +41,7 @@ def setup():
     return hub
 
 def main():
-    global garra_fechada, garra_levantada, garra_altura_sensor, plataforma_estendida
+    global plataforma_estendida, descida_atual_garra
 
     cmd = None
     while True:
@@ -60,24 +54,17 @@ def main():
             LOG(f"{blt.cmd(comando)}{args}")
 
         elif comando == blt.cmd.levanta_garra:
-            if not garra_levantada:
-                LOG("levantando")
-                levanta_garra()
-                garra_levantada = True
-            blt.enviar_comando(blt.rsp.levantei)
+            levanta_garra()
+            blt.enviar_comando(blt.rsp.levantei_garra)
+        elif comando == blt.cmd.media_garra:
+            media_garra()
+            blt.enviar_comando(blt.rsp.mediei_garra)
         elif comando == blt.cmd.abaixa_garra:
-            if garra_levantada:
-                LOG("abaixando")
-                abaixa_garra()
-                garra_levantada = False
-            blt.enviar_comando(blt.rsp.abaixei)
+            abaixa_garra()
+            blt.enviar_comando(blt.rsp.abaixei_garra)
 
         elif comando == blt.cmd.levanta_garra_dist_sensor:
-            if (not garra_levantada and
-                not garra_altura_sensor):
-                LOG("levantando")
-                levanta_garra_dist_sensor()
-                garra_altura_sensor = True
+            ASSERT(False, "levanta_garra_dist_sensor não existe")
             blt.enviar_comando(blt.rsp.levantei_dist_sensor)
 
         elif comando == blt.cmd.mostrar_cor:
@@ -104,33 +91,61 @@ def test():
     retrai_plataforma()
     bipes.separador()
 
-    LOG("abrir_garra")
-    blt.abrir_garra()
     LOG("abaixa_garra")
     abaixa_garra()
     bipes.separador()
 
-    LOG("fechar_garra")
-    blt.fechar_garra()
+    LOG("levanta_garra")
     levanta_garra()
     bipes.separador()
 
     LOG("estende_plataforma")
     estende_plataforma()
-    LOG("abrir_garra")
-    blt.abrir_garra()
+    LOG("media_garra")
+    media_garra()
+    bipes.separador()
+
     LOG("retrai_plataforma")
     retrai_plataforma()
     bipes.separador()
 
+    LOG("abaixa_garra")
+    abaixa_garra()
+    LOG("media_garra")
+    media_garra()
+    LOG("estende_plataforma")
+    estende_plataforma()
+    bipes.separador()
+
+def mexer_guindaste(descida=DESCIDA_MAX_GARRA, vel=VEL_DESCER_GARRA):
+    global descida_atual_garra
+    descida_atual_garra += descida
+    globais.motor_guindaste.run_angle(
+        vel, descida*grau_mm, then=Stop.COAST, wait=True
+    )
+
+def garra_na_altura(altura, vel=VEL_DESCER_GARRA):
+    mexer_guindaste(altura - descida_atual_garra, vel=vel)
+
 def abaixa_garra(vel=VEL_DESCER_GARRA):
-    globais.motor_guindaste.run_angle(vel, ANG_DESCER_GARRA, then=Stop.COAST, wait=True)
+    if descida_atual_garra < DESCIDA_MAX_GARRA:
+        LOG("abaixando")
+    garra_na_altura(DESCIDA_MAX_GARRA, vel=vel)
+
+def media_garra(vel=VEL_DESCER_GARRA):
+    if descida_atual_garra > DIST_PLATAFORMA:
+        LOG("levantando médio")
+    if descida_atual_garra < DIST_PLATAFORMA:
+        LOG("abaixando médio")
+    garra_na_altura(DIST_PLATAFORMA, vel=vel)
 
 def levanta_garra(vel=VEL_DESCER_GARRA):
-    globais.motor_guindaste.run_angle(-vel, ANG_DESCER_GARRA, then=Stop.COAST, wait=True)
+    if descida_atual_garra > 0:
+        LOG("levantando")
+    garra_na_altura(0, vel=vel)
 
 def levanta_garra_dist_sensor(vel=VEL_DESCER_GARRA): #! errado tudo nome e oq faz
-    globais.motor_guindaste.run_angle(-vel, ANG_ALTURA_PLATAFORMA, then=Stop.COAST, wait=True)
+    ASSERT(False, "levanta_garra_dist_sensor não existe")
 
 def estende_plataforma(vel=240):
     globais.motor_plataforma.run_angle(vel, ANG_PLATAFORMA, then=Stop.COAST, wait=True)
