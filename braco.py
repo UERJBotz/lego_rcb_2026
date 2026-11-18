@@ -27,18 +27,8 @@ def setup():
     hub.display.orientation(Side.BOTTOM)
     globais.init(hub, TESTE, DEBUG, nome="braço")
 
-    #! globais.motor_garra    = Motor(Port.B, Direction.COUNTERCLOCKWISE)
-    #! globais.motor_vertical = Motor(Port.A, Direction.COUNTERCLOCKWISE)
-    globais.motor_guindaste = Motor(Port.C, Direction.COUNTERCLOCKWISE)
+    globais.motor_guindaste  = Motor(Port.C, Direction.CLOCKWISE)
     globais.motor_plataforma = Motor(Port.D, Direction.CLOCKWISE)
-
-    LOG("ligando arduino")
-    try:
-        from pybricks.pupdevices import DCMotor
-        arduino = DCMotor(Port.F); arduino.dc(100)
-        LOG("arduino ligado")
-    except OSError:
-        ERRO("ARDUINO NÃO CONECTADO!")
 
     hub.system.set_stop_button((Button.CENTER,))
     return hub
