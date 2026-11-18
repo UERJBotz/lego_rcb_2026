@@ -1,8 +1,9 @@
 from pybricks.hubs import PrimeHub
 
 from pybricks.pupdevices import Motor, ColorSensor, UltrasonicSensor
-from pybricks.parameters import Port, Button, Color, Direction, Side
+from pybricks.parameters import Port, Button, Color, Direction, Side, Stop
 from pybricks.tools      import wait, StopWatch
+
 from cores import Cor
 from comum import globais, bipes, luzes
 from comum import LOG, ERRO, ASSERT
@@ -13,11 +14,23 @@ import cores
 import garra
 
 
+grau_mm = 6000/630 # 9.52º/mm -> 95.2º/cm
+DIST_DESCER_GARRA = 160#mm
+ANG_DESCER_GARRA  = DIST_DESCER_GARRA*grau_mm
+VEL_DESCER_GARRA  = 800
+
+ALTURA_PLATAFORMA     = 100#mm
+ANG_ALTURA_PLATAFORMA = ALTURA_PLATAFORMA*grau_mm
+
+RAIO_ENGRENAGEM = 9#mm
+DIST_PLATAFORMA = 60#mm
+ANG_PLATAFORMA  = DIST_PLATAFORMA*RAIO_ENGRENAGEM
+
+
 def setup():
     global garra_fechada, garra_levantada, garra_altura_sensor, plataforma_estendida
-    global sensor_dist_dir
 
-    garra_levantada = False
+    garra_levantada = True
     garra_fechada   = False
     garra_altura_sensor = False
     plataforma_estendida= False
@@ -49,26 +62,24 @@ def main():
         elif comando == blt.cmd.levanta_garra:
             if not garra_levantada:
                 LOG("levantando")
-                garra.levanta_garra()
+                levanta_garra()
                 garra_levantada = True
             blt.enviar_comando(blt.rsp.levantei)
         elif comando == blt.cmd.abaixa_garra:
             if garra_levantada:
                 LOG("abaixando")
-                garra.abaixa_garra()
+                abaixa_garra()
                 garra_levantada = False
             blt.enviar_comando(blt.rsp.abaixei)
 
         elif comando == blt.cmd.levanta_garra_dist_sensor:
-            if not garra_levantada and not garra_altura_sensor:
+            if (not garra_levantada and
+                not garra_altura_sensor):
                 LOG("levantando")
-                garra.levanta_garra_dist_sensor()
+                levanta_garra_dist_sensor()
                 garra_altura_sensor = True
             blt.enviar_comando(blt.rsp.levantei_dist_sensor)
 
-        elif comando == blt.cmd.ver_dist_sensor_braco:
-            dist = sensor_dist_dir.distance()
-            blt.enviar_comando(blt.rsp.dist_sensor_braco, dist)
         elif comando == blt.cmd.mostrar_cor:
             cor, = args
             luzes.mostrar(Cor(cor = cor).color)
@@ -77,36 +88,55 @@ def main():
         elif comando == blt.cmd.estende_plataforma:
             if not plataforma_estendida:
                 LOG("estendendo")
-                garra.estende_plataforma()
+                estende_plataforma()
                 plataforma_estendida = True
             blt.enviar_comando(blt.rsp.estendi)
         elif comando == blt.cmd.retrai_plataforma:
             if plataforma_estendida:
                 LOG("retraindo")
-                garra.retrai_plataforma()
+                retrai_plataforma()
                 plataforma_estendida = False
             blt.enviar_comando(blt.rsp.retrai)
 
 def test():
     ... # testar coisas aqui sem mudar o resto do código
-    from pybricks.parameters import Stop
+    LOG("retrai_plataforma")
+    retrai_plataforma()
+    bipes.separador()
 
-    motor_guindaste = Motor(Port.C, Direction.COUNTERCLOCKWISE)
-
-    cm_grau = 63/6000 #.0105 cm/º
-    grau_cm = 6000/63 # 95.2 º/cm
-
-    ANG_SUBIR_GARRA = 63*grau_cm
-    VEL_SUBIR_GARRA = 800   
-
-    def levanta_garra(vel=VEL_SUBIR_GARRA):
-        motor_guindaste.run_angle(vel, ANG_SUBIR_GARRA, then=Stop.HOLD, wait=True)
-
-    def abaixa_garra(vel=VEL_SUBIR_GARRA):
-        motor_guindaste.run_angle(-vel, ANG_SUBIR_GARRA, then=Stop.HOLD, wait=True)
-
-    levanta_garra()
+    LOG("abrir_garra")
+    blt.abrir_garra()
+    LOG("abaixa_garra")
     abaixa_garra()
+    bipes.separador()
+
+    LOG("fechar_garra")
+    blt.fechar_garra()
+    levanta_garra()
+    bipes.separador()
+
+    LOG("estende_plataforma")
+    estende_plataforma()
+    LOG("abrir_garra")
+    blt.abrir_garra()
+    LOG("retrai_plataforma")
+    retrai_plataforma()
+    bipes.separador()
+
+def abaixa_garra(vel=VEL_DESCER_GARRA):
+    globais.motor_guindaste.run_angle(vel, ANG_DESCER_GARRA, then=Stop.COAST, wait=True)
+
+def levanta_garra(vel=VEL_DESCER_GARRA):
+    globais.motor_guindaste.run_angle(-vel, ANG_DESCER_GARRA, then=Stop.COAST, wait=True)
+
+def levanta_garra_dist_sensor(vel=VEL_DESCER_GARRA): #! errado tudo nome e oq faz
+    globais.motor_guindaste.run_angle(-vel, ANG_ALTURA_PLATAFORMA, then=Stop.COAST, wait=True)
+
+def estende_plataforma(vel=240):
+    globais.motor_plataforma.run_angle(vel, ANG_PLATAFORMA, then=Stop.COAST, wait=True)
+
+def retrai_plataforma(vel=240):
+    globais.motor_plataforma.run_until_stalled(-vel, then=Stop.COAST, duty_limit=None)
 
 def menu_calibração(*sensores, botao_parar=Button.BLUETOOTH,
                                botao_aceitar=Button.CENTER,
