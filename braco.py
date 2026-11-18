@@ -1,8 +1,9 @@
 from pybricks.hubs import PrimeHub
 
 from pybricks.pupdevices import Motor, ColorSensor, UltrasonicSensor
-from pybricks.parameters import Port, Button, Color, Direction, Side
+from pybricks.parameters import Port, Button, Color, Direction, Side, Stop
 from pybricks.tools      import wait, StopWatch
+
 from cores import Cor
 from comum import globais, bipes, luzes
 from comum import LOG, ERRO, ASSERT
@@ -13,37 +14,40 @@ import cores
 import garra
 
 
-#! se a gente girar a garra na mão, mesmo resetando a cabeça, o estado da garra no braço se mantém e a gente se fode.
+grau_mm = 6000/630 # 9.52º/mm -> 95.2º/cm
+DIST_DESCER_GARRA = 160#mm
+ANG_DESCER_GARRA  = DIST_DESCER_GARRA*grau_mm
+VEL_DESCER_GARRA  = 800
+
+ALTURA_PLATAFORMA     = 100#mm
+ANG_ALTURA_PLATAFORMA = ALTURA_PLATAFORMA*grau_mm
+
+RAIO_ENGRENAGEM = 9#mm
+DIST_PLATAFORMA = 60#mm
+ANG_PLATAFORMA  = DIST_PLATAFORMA*RAIO_ENGRENAGEM
+
 
 def setup():
-    global garra_fechada, garra_levantada, garra_altura_sensor
-    global sensor_dist_dir
+    global garra_fechada, garra_levantada, garra_altura_sensor, plataforma_estendida
 
-    garra_levantada = False
+    garra_levantada = True
     garra_fechada   = False
     garra_altura_sensor = False
+    plataforma_estendida= False
 
     hub = PrimeHub(broadcast_channel=blt.TX_BRACO,
                    observe_channels=[blt.TX_CABECA])
     hub.display.orientation(Side.BOTTOM)
     globais.init(hub, TESTE, DEBUG, nome="braço")
 
-    #! globais.motor_garra    = Motor(Port.B, Direction.COUNTERCLOCKWISE)
-    #! globais.motor_vertical = Motor(Port.A, Direction.COUNTERCLOCKWISE)
-
-    LOG("ligando arduino")
-    try:
-        from pybricks.pupdevices import DCMotor
-        arduino = DCMotor(Port.F); arduino.dc(100)
-        LOG("arduino ligado")
-    except OSError:
-        ERRO("ARDUINO NÃO CONECTADO!")
+    globais.motor_guindaste  = Motor(Port.C, Direction.CLOCKWISE)
+    globais.motor_plataforma = Motor(Port.D, Direction.CLOCKWISE)
 
     hub.system.set_stop_button((Button.CENTER,))
     return hub
 
 def main():
-    global garra_fechada, garra_levantada, garra_altura_sensor
+    global garra_fechada, garra_levantada, garra_altura_sensor, plataforma_estendida
 
     cmd = None
     while True:
@@ -55,50 +59,84 @@ def main():
         if cmd != antes:
             LOG(f"{blt.cmd(comando)}{args}")
 
-        if   comando == blt.cmd.fecha_garra:
-            if not garra_fechada:
-                LOG("fechando")
-                ang = garra.fecha_garra()
-                garra_fechada = True
-            blt.enviar_comando(blt.rsp.fechei, ang)
-        elif comando == blt.cmd.abre_garra:
-            if garra_fechada:
-                LOG("abrindo")
-                garra.abre_garra()
-                garra_fechada = False
-            blt.enviar_comando(blt.rsp.abri)
-
         elif comando == blt.cmd.levanta_garra:
             if not garra_levantada:
                 LOG("levantando")
-                garra.levanta_garra()
+                levanta_garra()
                 garra_levantada = True
             blt.enviar_comando(blt.rsp.levantei)
         elif comando == blt.cmd.abaixa_garra:
             if garra_levantada:
                 LOG("abaixando")
-                garra.abaixa_garra()
+                abaixa_garra()
                 garra_levantada = False
             blt.enviar_comando(blt.rsp.abaixei)
 
         elif comando == blt.cmd.levanta_garra_dist_sensor:
-            if not garra_levantada and not garra_altura_sensor:
+            if (not garra_levantada and
+                not garra_altura_sensor):
                 LOG("levantando")
-                garra.levanta_garra_dist_sensor()
+                levanta_garra_dist_sensor()
                 garra_altura_sensor = True
             blt.enviar_comando(blt.rsp.levantei_dist_sensor)
 
-        elif comando == blt.cmd.ver_dist_sensor_braco:
-            dist = sensor_dist_dir.distance()
-            blt.enviar_comando(blt.rsp.dist_sensor_braco, dist)
         elif comando == blt.cmd.mostrar_cor:
             cor, = args
             luzes.mostrar(Cor(cor = cor).color)
             blt.enviar_comando(blt.rsp.mostrei_cor)
+
+        elif comando == blt.cmd.estende_plataforma:
+            if not plataforma_estendida:
+                LOG("estendendo")
+                estende_plataforma()
+                plataforma_estendida = True
+            blt.enviar_comando(blt.rsp.estendi)
+        elif comando == blt.cmd.retrai_plataforma:
+            if plataforma_estendida:
+                LOG("retraindo")
+                retrai_plataforma()
+                plataforma_estendida = False
+            blt.enviar_comando(blt.rsp.retrai)
+
 def test():
     ... # testar coisas aqui sem mudar o resto do código
-    mapa_hsv = menu_calibração(sensor_cor_frente)
-    cores.repl_calibração(mapa_hsv, lado="frente")
+    LOG("retrai_plataforma")
+    retrai_plataforma()
+    bipes.separador()
+
+    LOG("abrir_garra")
+    blt.abrir_garra()
+    LOG("abaixa_garra")
+    abaixa_garra()
+    bipes.separador()
+
+    LOG("fechar_garra")
+    blt.fechar_garra()
+    levanta_garra()
+    bipes.separador()
+
+    LOG("estende_plataforma")
+    estende_plataforma()
+    LOG("abrir_garra")
+    blt.abrir_garra()
+    LOG("retrai_plataforma")
+    retrai_plataforma()
+    bipes.separador()
+
+def abaixa_garra(vel=VEL_DESCER_GARRA):
+    globais.motor_guindaste.run_angle(vel, ANG_DESCER_GARRA, then=Stop.COAST, wait=True)
+
+def levanta_garra(vel=VEL_DESCER_GARRA):
+    globais.motor_guindaste.run_angle(-vel, ANG_DESCER_GARRA, then=Stop.COAST, wait=True)
+
+def levanta_garra_dist_sensor(vel=VEL_DESCER_GARRA): #! errado tudo nome e oq faz
+    globais.motor_guindaste.run_angle(-vel, ANG_ALTURA_PLATAFORMA, then=Stop.COAST, wait=True)
+
+def estende_plataforma(vel=240):
+    globais.motor_plataforma.run_angle(vel, ANG_PLATAFORMA, then=Stop.COAST, wait=True)
+
+def retrai_plataforma(vel=240):
+    globais.motor_plataforma.run_until_stalled(-vel, then=Stop.COAST, duty_limit=None)
 
 def menu_calibração(*sensores, botao_parar=Button.BLUETOOTH,
                                botao_aceitar=Button.CENTER,

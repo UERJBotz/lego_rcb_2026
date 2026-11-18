@@ -171,7 +171,7 @@ def test():
     global orientação_estimada, pos_estimada, na_grade, cores_caçambas
     ... # testar coisas aqui sem mudar o resto do código
     blt.SILENCIOSO = True
-    
+
     while False:
         cor = blt.ver_cor_cubo()
         print(cor)
@@ -272,8 +272,48 @@ def test():
             dar_ré(DIST_VERDE_CAÇAMBA)
         return
 
+    if False:
+        blt.abrir_garra()
+        blt.fechar_garra()
+        bipes.separador()
+    if False:
+        blt.abaixar_garra()
+        blt.levantar_garra()
+        bipes.separador()
+    if False:
+        blt.retrair_plataforma()
+        blt.estender_plataforma()
+        blt.retrair_plataforma()
+        bipes.separador()
+
     if True:
-        main()
+        blt.retrair_plataforma()
+        bipes.separador()
+
+        blt.abrir_garra()
+        blt.abaixar_garra()
+        bipes.separador()
+
+        blt.fechar_garra()
+        blt.levantar_garra()
+        bipes.separador()
+
+        blt.estender_plataforma()
+        blt.abrir_garra()
+        blt.retrair_plataforma()
+        bipes.separador()
+
+        #blt.estender_plataforma()
+        #blt.abaixar_garra()
+        #blt.fechar_garra()
+        #blt.levantar_garra()
+        #bipes.separador()
+
+        #blt.retrair_plataforma()
+        #blt.abaixar_garra()
+        #blt.abrir_garra()
+        #blt.levantar_garra()
+        #bipes.separador()
 
     LOG("fim do teste")
 
@@ -989,7 +1029,7 @@ def descobrir_cor_caçambas():
     rodas.turn(10)
     dar_ré(TAM_BLOCO//4)
     rodas.turn(-20)
-   
+
 class testes:
     @staticmethod
     def imprimir_cor_caçamba_para_sempre():
