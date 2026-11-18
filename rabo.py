@@ -140,6 +140,9 @@ def main(hub):
         cor_caçamba = sensor_caçamba.cor()
         dist_cubo   = sensor_dist_cubo.ping()
 
+        barra_led.fill(cor_to_rgb(cor_cubo))
+        barra_led.write()
+
         LOG(f"caçamba: {Cor(cor_caçamba)}\t",
               f"garra: {Cor(cor_cubo)}\t",
                f"dist: {dist_cubo}mm")
@@ -174,7 +177,7 @@ def main(hub):
 
 
 if __name__ == "__main__":
-    if False: # DEBUG
+    if F: # DEBUG
         LOG("MODO DEBUG"); main(setup());
         raise KeyboardInterrupt
 
