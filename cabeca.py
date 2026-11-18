@@ -303,17 +303,17 @@ def test():
         blt.retrair_plataforma()
         bipes.separador()
 
-        blt.estender_plataforma()
-        blt.abaixar_garra()
-        blt.fechar_garra()
-        blt.levantar_garra()
-        bipes.separador()
+        #blt.estender_plataforma()
+        #blt.abaixar_garra()
+        #blt.fechar_garra()
+        #blt.levantar_garra()
+        #bipes.separador()
 
-        blt.retrair_plataforma()
-        blt.abaixar_garra()
-        blt.abrir_garra()
-        blt.levantar_garra()
-        bipes.separador()
+        #blt.retrair_plataforma()
+        #blt.abaixar_garra()
+        #blt.abrir_garra()
+        #blt.levantar_garra()
+        #bipes.separador()
 
     LOG("fim do teste")
 
