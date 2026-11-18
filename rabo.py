@@ -11,6 +11,8 @@ from lib.polyfill import Enum
 from comum import globais, coringa
 from comum import LOG, ERRO, ASSERT
 
+ANG_GARRA_FECHADA = 90
+ANG_GARRA_ABERTA  = 0
 
 #! from cores import cor as Cor
 Cor = Enum("Cor", ["NENHUMA",
@@ -43,9 +45,11 @@ class Servo(PWM):
         self.min_angle = min_angle
         self.max_angle = max_angle
 
-    def angle(self, ang):
+    def angle(self, ang, wait=None):
         self.duty_ns(int(map_interval_clamped(ang, self.min_angle, self.max_angle,
                                                    self.min_pulse, self.max_pulse))*1000)
+        if wait: delay(wait)
+
     def off(self):
         self.duty(0)
 
@@ -78,7 +82,7 @@ class NoneHub(coringa): #! fazer direito
 
 
 def setup():
-    global hub, timer, led, servos
+    global hub, timer, led, servo_garra
     global sensor_caçamba, sensor_cubo, sensor_dist_cubo
 
     hub = NoneHub(broadcast_channel=blt.TX_RABO,
@@ -101,8 +105,11 @@ def setup():
     LOG(f"-> i2c: caçamba{i2c_caçamba.scan()},",
                    f"cubo{i2c_cubo.scan()}")
 
-    servos = [Servo(Pin(17)), Servo(Pin(5)), Servo(Pin(18))]
-    for s in servos: s.angle(0)
+    servo_garra, *_ = servos = [
+        Servo(Pin(17)), Servo(Pin(5)), Servo(Pin(18))
+    ]
+    servo_garra.angle(ANG_GARRA_ABERTA, wait=200)
+    for s in servos: s.off()
 
     timer = millis()
     return hub
@@ -137,6 +144,12 @@ def main(hub):
             blt.enviar_resposta(blt.rsp.cor_sensor_braco, cor_caçamba) #!
         elif comando == blt.cmd.ver_cor_sensor_rabo: #!
             blt.enviar_resposta(blt.rsp.cor_sensor_rabo, cor_cubo) #!
+        elif comando == blt.cmd.fecha_garra:
+            servo_garra.angle(ANG_GARRA_FECHADA)
+            blt.enviar_resposta(blt.rsp.fechei)
+        elif comando == blt.cmd.abre_garra:
+            servo_garra.angle(ANG_GARRA_ABERTA)
+            blt.enviar_resposta(blt.rsp.abri)
 
 
 if __name__ == "__main__":
