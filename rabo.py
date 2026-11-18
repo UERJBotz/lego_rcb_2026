@@ -5,6 +5,7 @@ from machine import I2C, Pin, PWM
 from bleradio import BLERadio
 from tcs3472 import TCS34725
 from vl53l0x import VL53L0X
+from neopixel import NeoPixel
 
 from lib.polyfill import Enum
 
@@ -32,6 +33,19 @@ def map_interval(x, m,M, MIN,MAX):
 
 def map_interval_clamped(x, m,M, MIN,MAX):
     return clamp(map_interval(x, m,M, MIN,MAX), MIN, MAX)
+
+def cor_to_rgb(cor):
+    return {
+        Cor.NENHUMA:  (0, 0, 0),
+        Cor.PRETO:    (50, 50, 50),
+        Cor.AZUL:     (0, 0, 255),
+        Cor.VERDE:    (0, 255, 0),
+        Cor.AMARELO:  (255, 150, 0),
+        Cor.VERMELHO: (255, 0, 0),
+        Cor.BRANCO:   (255, 255, 255),
+        Cor.MARROM:   (139, 69, 19),
+    }[cor]
+
 
 class Servo(PWM):
     def __init__(self, pin, min_angle=0,   max_angle=90,
@@ -82,7 +96,7 @@ class NoneHub(coringa): #! fazer direito
 
 
 def setup():
-    global hub, timer, led, servo_garra
+    global hub, timer, led, servo_garra, barra_led
     global sensor_caçamba, sensor_cubo, sensor_dist_cubo
 
     hub = NoneHub(broadcast_channel=blt.TX_RABO,
@@ -106,10 +120,12 @@ def setup():
                    f"cubo{i2c_cubo.scan()}")
 
     servo_garra, *_ = servos = [
-        Servo(Pin(17)), Servo(Pin(5)), Servo(Pin(18))
+        Servo(Pin(17)), Servo(Pin(18))
     ]
     servo_garra.angle(ANG_GARRA_ABERTA, wait=200)
     for s in servos: s.off()
+
+    barra_led = NeoPixel(Pin(5), 12)
 
     timer = millis()
     return hub
@@ -123,6 +139,12 @@ def main(hub):
         cor_cubo    = sensor_cubo.cor()
         cor_caçamba = sensor_caçamba.cor()
         dist_cubo   = sensor_dist_cubo.ping()
+
+
+        #LOG(cor_to_rgb(cor_cubo))
+
+        barra_led.fill(cor_to_rgb(cor_cubo))
+        barra_led.write()
 
         LOG(f"caçamba: {Cor(cor_caçamba)}\t",
               f"garra: {Cor(cor_cubo)}\t",
@@ -150,6 +172,11 @@ def main(hub):
         elif comando == blt.cmd.abre_garra:
             servo_garra.angle(ANG_GARRA_ABERTA)
             blt.enviar_resposta(blt.rsp.abri)
+        elif comando == blt.cmd.mostrar_cor:
+            cor, = args
+            barra_led.fill(cor_to_rgb(cor))
+            barra_led.write()
+            blt.enviar_comando(blt.rsp.mostrei_cor)
 
 
 if __name__ == "__main__":
