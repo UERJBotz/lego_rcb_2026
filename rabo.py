@@ -37,7 +37,7 @@ def map_interval_clamped(x, m,M, MIN,MAX):
 def cor_to_rgb(cor):
     return {
         Cor.NENHUMA:  (0, 0, 0),
-        Cor.PRETO:    (50, 50, 50),
+        Cor.PRETO:    (1, 1, 1),
         Cor.AZUL:     (0, 0, 255),
         Cor.VERDE:    (0, 255, 0),
         Cor.AMARELO:  (255, 150, 0),
@@ -140,9 +140,6 @@ def main(hub):
         cor_caçamba = sensor_caçamba.cor()
         dist_cubo   = sensor_dist_cubo.ping()
 
-        barra_led.fill(cor_to_rgb(cor_cubo))
-        barra_led.write()
-
         LOG(f"caçamba: {Cor(cor_caçamba)}\t",
               f"garra: {Cor(cor_cubo)}\t",
                f"dist: {dist_cubo}mm")
@@ -173,11 +170,12 @@ def main(hub):
             cor, = args
             barra_led.fill(cor_to_rgb(cor))
             barra_led.write()
-            blt.enviar_comando(blt.rsp.mostrei_cor)
+            blt.enviar_comando
+        #LOG(cor_to_rgb(cor_cubo))(blt.rsp.mostrei_cor)
 
 
 if __name__ == "__main__":
-    if F: # DEBUG
+    if False: # DEBUG
         LOG("MODO DEBUG"); main(setup());
         raise KeyboardInterrupt
 

@@ -667,8 +667,7 @@ def seguir_caminho(caminho): #! lidar com outras coisas
         elif mov == tipo_movimento.ESQUERDA_FRENTE:
             curva_linha_esquerda()
             achar_cruzamento_linha(dist_max=DIST_EIXO_SENSOR)
-        barra_led.fill(cor_to_rgb(Cor.BRANCO))
-        barra_led.write()elif mov == tipo_movimento.DIREITA_FRENTE:
+        elif mov == tipo_movimento.DIREITA_FRENTE:    
             curva_linha_direita()
             achar_cruzamento_linha(dist_max=TAM_BLOCO)
         elif mov == tipo_movimento.ESQUERDA:
