@@ -119,8 +119,8 @@ def main():
 
     while True:
         LOG("main: resetou", conta_reset, "vezes")
-        blt.resetar_garra()
-        blt.abaixar_garra()
+        blt.levantar_garra()
+        blt.retrair_plataforma()
         posicionamento_inicial()
         pos_estimada = (0,0)
 
@@ -198,7 +198,7 @@ def test():
         blt.fechar_garra()
 
     if False: testes.imprimir_cor_cubo_para_sempre()
-    if False: testes.imprimir_cor_caçamba_para_sempre()
+    if True: testes.imprimir_cor_caçamba_para_sempre()
 
     while False:
         if True: vel = 50 # mudar quando testar
@@ -865,8 +865,8 @@ def colocar_cubo_na_caçamba(cor_cubo, max_cubos=NUM_CUBOS_PEGÁVEIS):
 
 #! considerar adversário
 def varredura(pos_estimada, caçambas):
-    blt.resetar_garra()
-    blt.abaixar_garra()
+    blt.retrair_plataforma()
+    blt.mediar_garra()
 
     y, x = pos_estimada #! para procura genérico, usar y também
 
@@ -879,7 +879,7 @@ def varredura(pos_estimada, caçambas):
         x += 1 #! para procura genérico, considerar orientação
 
         cor = blt.ver_cor_cubo()
-        if cor == Cor.enum.NENHUMA: #! constantizar
+        if cor == Cor.enum.NENHUMA:
             LOG("varredura: cel livre cor NENHUMA*")
             tira_obstaculo((y,x))
         else:
@@ -933,8 +933,8 @@ def procura(pos_estimada, cores_caçambas):
         len(caminhos_incertas[x]) if caminhos_incertas[x] is not None else 9000
     ))
 
-    blt.resetar_garra()
-    blt.abaixar_garra()
+    blt.retrair_plataforma()
+    blt.mediar_garra()
     for cel_destino in cel_incertas:
         LOG("tentando de", cel_atual, "até :", cel_destino)
 
@@ -1006,19 +1006,19 @@ def descobrir_cor_caçambas():
     for i in range(NUM_CAÇAMBAS):
         cores_caçambas[i] = blt.ver_cor_caçamba()
         bipes.cabeca()
-        dist = blt.ver_dist_caçamba()
+        #dist = blt.ver_dist_caçamba()
 
-        #! rataria cores caçambas
-        if cores_caçambas[i].cor == Cor.enum.MARROM:
-            cores_caçambas[i] = Cor(cor=Cor.enum.AMARELO)
+        ##! rataria cores caçambas
+        #if cores_caçambas[i].cor == Cor.enum.MARROM:
+        #    cores_caçambas[i] = Cor(cor=Cor.enum.AMARELO)
         #if cores_caçambas[i].cor == Cor.enum.PRETO:
         #    if False: cores_caçambas[i] = Cor(cor=Cor.enum.AZUL)
         #    else:    cores_caçambas[i] = Cor(cor=Cor.enum.VERDE)
-        if cores_caçambas[i].cor == Cor.enum.NENHUMA:
-            if dist < TAM_QUARTEIRÃO:
-                cores_caçambas[i] = Cor(cor=Cor.enum.PRETO)
+        #if cores_caçambas[i].cor == Cor.enum.NENHUMA:
+        #    if dist < TAM_QUARTEIRÃO:
+        #        cores_caçambas[i] = Cor(cor=Cor.enum.PRETO)
 
-        LOG(f"descobrir_cor_caçamba: caçamba {cores_caçambas[i]} a {dist/10}cm")
+        LOG(f"descobrir_cor_caçamba: caçamba {cores_caçambas[i]}")# a {dist/10}cm")
 
         if i+1 < NUM_CAÇAMBAS:
             andar_dist_linha(TAM_CAÇAMBA+DIST_CAÇAMBA, vel = 80)
