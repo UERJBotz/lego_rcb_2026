@@ -195,8 +195,7 @@ def test():
 
     while False:
         blt.abrir_garra()
-        ang = blt.fechar_garra()
-        print(ang)
+        blt.fechar_garra()
 
     if False: testes.imprimir_cor_cubo_para_sempre()
     if False: testes.imprimir_cor_caçamba_para_sempre()
@@ -879,14 +878,12 @@ def varredura(pos_estimada, caçambas):
         andar_dist_linha(DIST_VER_CUBO)
         x += 1 #! para procura genérico, considerar orientação
 
-        ang = blt.fechar_garra()
         cor = blt.ver_cor_cubo()
-        if ang > ANG_LIMIAR_GARRA_FECHADA or cor == Cor.enum.NENHUMA: #! constantizar
-            LOG("varredura: cel livre fechou tudo")
-
+        if cor == Cor.enum.NENHUMA: #! constantizar
+            LOG("varredura: cel livre cor NENHUMA*")
             tira_obstaculo((y,x))
-            blt.abrir_garra()
         else:
+            blt.fechar_garra()
             luzes.mostrar(cor.color) #! fzr printar em braco
             break
 
@@ -958,21 +955,13 @@ def procura(pos_estimada, cores_caçambas):
 
         # vê se tem alguma coisa na frente
         andar_dist_linha(DIST_CRUZAMENTO_CUBO)
-        ang = blt.fechar_garra()
-        if ang > 145: #! constantizar
-            LOG("procura: cel livre fechou tudo")
-            tira_obstaculo(cel_destino)
-            achar_cruzamento_linha(dist_max=TAM_QUARTEIRÃO)
-            cel_atual = cel_destino
-            blt.abrir_garra()
-            continue
 
         cor = blt.ver_cor_cubo()
         blt.mostrar_cor(cor)
         if cor == Cor.enum.BRANCO:
             bipes.cabeca()
         if cor == Cor.enum.NENHUMA:
-            LOG("procura: cel livre viu NENHUM")
+            LOG("procura: cel livre viu cor.NENHUMA*")
             tira_obstaculo(cel_destino)
             achar_cruzamento_linha(dist_max=TAM_QUARTEIRÃO)
             cel_atual = cel_destino
