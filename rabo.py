@@ -1,7 +1,7 @@
 import blt
 
 from time import ticks_ms as millis, sleep_ms as delay
-from machine import I2C, Pin, PWM
+from machine import I2C, SoftI2C, Pin, PWM
 from bleradio import BLERadio
 from tcs3472 import TCS34725
 from vl53l0x import VL53L0X
@@ -77,6 +77,31 @@ class Led(Pin):
     def toggle(self):
         self.value(self.value()^1)
 
+class SensorCor(TCS34725): pass
+class SensorDist(VL53L0X):
+    def __init__(self, i2c, offset=0, *args, **kwargs):
+        super().__init__(i2c, *args, **kwargs)
+        self.offset = offset
+
+    def ping(self): return super().ping() + self.offset
+    def dist(self): return self.ping()
+
+class SensorCombinado:
+    def __init__(self, i2c, offset=0):
+        self.i2c = i2c
+        self.sensor_dist = SensorDist(i2c, offset=offset, custom_address=0x30)
+        self.sensor_cor  = SensorCor(i2c)
+
+    def cor_se_perto(self):
+        if (dist := self.dist()) >= 30: return Cor.NENHUMA
+
+        if (cor := self.cor()) == Cor.NENHUMA:
+            return Cor.BRANCO #! ver se fazer assim mesmo
+        return cor
+
+    def cor(self):  return self.sensor_cor.cor()
+    def dist(self): return self.sensor_dist.ping()
+
 class NoneHub(coringa): #! fazer direito
     def __init__(self, broadcast_channel=None,
                        observe_channels=[]):
@@ -97,7 +122,7 @@ class NoneHub(coringa): #! fazer direito
 
 def setup():
     global hub, timer, led, servo_garra, barra_led
-    global sensor_caçamba, sensor_cubo, sensor_dist_cubo
+    global sensor_caçamba, sensor_cubo, sensor_inimigo
 
     hub = NoneHub(broadcast_channel=blt.TX_RABO,
                   observe_channels=[blt.TX_CABECA])
@@ -106,15 +131,18 @@ def setup():
 
     led = Led(2, invert=False); led.on()
 
-    i2c_cubo    = I2C(1, scl=Pin(33), sda=Pin(25), freq=100000)
-    i2c_caçamba = I2C(0, scl=Pin(19), sda=Pin(21), freq=100000)
+    i2c_cubo    =     I2C(1, scl=Pin(33), sda=Pin(25), freq=100000)
+    i2c_caçamba =     I2C(0, scl=Pin(19), sda=Pin(21), freq=100000)
+    i2c_inimigo = SoftI2C(   scl=Pin(22), sda=Pin(23), freq=100000)
+    #i2c_extra   = SoftI2C(   scl=Pin(13), sda=Pin(12), freq=100000)
+    #! pino 13 dá ruim, tem que trocar
 
     LOG(f"i2c: caçamba{i2c_caçamba.scan()},",
                 f"cubo{i2c_cubo.scan()}", end=" ")
 
-    sensor_dist_cubo = VL53L0X(i2c_cubo, custom_address=0x30)
-    sensor_cubo      = TCS34725(i2c_cubo)
-    sensor_caçamba   = TCS34725(i2c_caçamba)
+    sensor_cubo    = SensorCombinado(i2c_cubo,    offset=-100)#! investigar pq offset
+    sensor_caçamba = SensorCombinado(i2c_caçamba, offset=-50) #! investigar pq offset
+    sensor_inimigo = SensorDist(i2c_inimigo,      offset=-70) #! investigar pq offset
 
     LOG(f"-> i2c: caçamba{i2c_caçamba.scan()},",
                    f"cubo{i2c_cubo.scan()}")
@@ -136,23 +164,15 @@ def main(hub):
     cmd = None
     cor_caçamba = cor_garra = 0
     while True:
-        cor_cubo    = sensor_cubo.cor()
-        cor_caçamba = sensor_caçamba.cor()
-        dist_cubo   = sensor_dist_cubo.ping() - 100 #! tem que ver porque tem 100 a mais
+        cor_cubo     = sensor_cubo.cor()
+        dist_cubo    = sensor_cubo.dist()
+        cor_caçamba  = sensor_caçamba.cor()
+        dist_caçamba = sensor_caçamba.dist()
+        dist_inimigo = sensor_inimigo.dist()
 
-        if dist_cubo <= 30:
-            #if cor_cubo == Cor.NENHUMA:
-            #    cor_cubo = Cor.BRANCO
-            pass
-        else:
-            cor_cubo = Cor.NENHUMA
-
-        #barra_led.fill(cor_to_rgb(cor_cubo))
-        #barra_led.write()
-
-        LOG(f"caçamba: {Cor(cor_caçamba)}\t",
-              f"garra: {Cor(cor_cubo)}\t",
-               f"dist: {dist_cubo}mm")
+        LOG(f"caçamba: {Cor(cor_caçamba)} a {dist_caçamba}mm",
+              f"garra: {Cor(cor_cubo)} a {dist_cubo}mm",
+            f"inimigo: a {dist_inimigo}mm", sep="\t")
 
         if (millis() - timer) > 1000:
             timer = millis()
