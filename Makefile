@@ -30,8 +30,8 @@ braco_imediato:
 .PHONY: teste cabeca_teste braco_teste
 teste: cabeca_teste braco_teste
 
-TESTE_BRACO  = .__teste_braco__.py
-TESTE_CABECA = .__teste_cabeca__.py
+TESTE_BRACO  = "__teste_braco__.py"
+TESTE_CABECA = "__teste_cabeca__.py"
 
 cabeca_teste: $(TESTE_CABECA)
 	$(PYBRICKS) run ble --name $(NOME_CABECA) $<
@@ -48,8 +48,6 @@ $(TESTE_BRACO): braco.py
 #! ver algum jeito de não fazer upload sem precisar
 # #! if grep -q $< <<<"$(AMPY) ls"; then echo "já tá" fi
 # #! if ! "$(AMPY) get $<"; then echo "não tá" fi
-rabo:: rabo.py
-	$(AMPY) --port /dev/ttyUSB0 put $< main.py
 rabo:: bluetooth.py
 	$(AMPY) --port /dev/ttyUSB0 put $< blt.py
 rabo:: comum.py
@@ -64,6 +62,10 @@ rabo:: firmware/bleradio.py
 	$(AMPY) --port /dev/ttyUSB0 put $<
 rabo:: firmware/tcs3472.py
 	$(AMPY) --port /dev/ttyUSB0 put $<
+rabo:: firmware/vl53l0x.py
+	$(AMPY) --port /dev/ttyUSB0 put $<
+rabo:: rabo.py
+	$(AMPY) --port /dev/ttyUSB0 put $< main.py
 
 .PHONY: clean
 clean:

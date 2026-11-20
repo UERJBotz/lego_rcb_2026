@@ -1,15 +1,19 @@
 import blt
 
 from time import ticks_ms as millis, sleep_ms as delay
-from machine import I2C, Pin
+from machine import I2C, SoftI2C, Pin, PWM
 from bleradio import BLERadio
 from tcs3472 import TCS34725
+from vl53l0x import VL53L0X
+from neopixel import NeoPixel
 
 from lib.polyfill import Enum
 
 from comum import globais, coringa
 from comum import LOG, ERRO, ASSERT
 
+ANG_GARRA_FECHADA = 90
+ANG_GARRA_ABERTA  = 0
 
 #! from cores import cor as Cor
 Cor = Enum("Cor", ["NENHUMA",
@@ -21,13 +25,82 @@ Cor = Enum("Cor", ["NENHUMA",
                    "BRANCO",
                    "MARROM"])
 
+def clamp(x, m,M):
+    return min(max(x, m), M)
+
+def map_interval(x, m,M, MIN,MAX):
+    return MIN + (x-m)*(MAX-MIN)/(M-m)
+
+def map_interval_clamped(x, m,M, MIN,MAX):
+    return clamp(map_interval(x, m,M, MIN,MAX), MIN, MAX)
+
+def cor_to_rgb(cor):
+    return {
+        Cor.NENHUMA:  (0, 0, 0),
+        Cor.PRETO:    (1, 1, 1),
+        Cor.AZUL:     (0, 0, 255),
+        Cor.VERDE:    (0, 255, 0),
+        Cor.AMARELO:  (255, 150, 0),
+        Cor.VERMELHO: (255, 0, 0),
+        Cor.BRANCO:   (255, 255, 255),
+        Cor.MARROM:   (139, 69, 19),
+    }[cor]
+
+
+class Servo(PWM):
+    def __init__(self, pin, min_angle=0,   max_angle=90,
+                            min_pulse=300, max_pulse=1000):
+        super().__init__(pin)
+        self.freq(50)
+        self.duty(0)
+
+        self.min_pulse = min_pulse
+        self.max_pulse = max_pulse
+        self.min_angle = min_angle
+        self.max_angle = max_angle
+
+    def angle(self, ang, wait=None):
+        self.duty_ns(int(map_interval_clamped(ang, self.min_angle, self.max_angle,
+                                                   self.min_pulse, self.max_pulse))*1000)
+        if wait: delay(wait)
+
+    def off(self):
+        self.duty(0)
+
 class Led(Pin):
-    def __init__(self, pin):
+    def __init__(self, pin, invert=True):
         super().__init__(pin, Pin.OUT)
-    def on(self):  self.value(0)
-    def off(self): self.value(1)
+        self.invert = invert
+
+    def on(self):  self.value(1 ^ self.invert)
+    def off(self): self.value(0 ^ self.invert)
     def toggle(self):
         self.value(self.value()^1)
+
+class SensorCor(TCS34725): pass
+class SensorDist(VL53L0X):
+    def __init__(self, i2c, offset=0, *args, **kwargs):
+        super().__init__(i2c, *args, **kwargs)
+        self.offset = offset
+
+    def ping(self): return super().ping() + self.offset
+    def dist(self): return self.ping()
+
+class SensorCombinado:
+    def __init__(self, i2c, offset=0):
+        self.i2c = i2c
+        self.sensor_dist = SensorDist(i2c, offset=offset, custom_address=0x30)
+        self.sensor_cor  = SensorCor(i2c)
+
+    def cor_se_perto(self):
+        if (dist := self.dist()) >= 30: return Cor.NENHUMA
+
+        if (cor := self.cor()) == Cor.NENHUMA:
+            return Cor.BRANCO #! ver se fazer assim mesmo
+        return cor
+
+    def cor(self):  return self.sensor_cor.cor()
+    def dist(self): return self.sensor_dist.ping()
 
 class NoneHub(coringa): #! fazer direito
     def __init__(self, broadcast_channel=None,
@@ -48,26 +121,39 @@ class NoneHub(coringa): #! fazer direito
 
 
 def setup():
-    global hub, timer, led, sensor_caçamba, sensor_cubo
+    global hub, timer, led, servo_garra, barra_led
+    global sensor_caçamba, sensor_cubo, sensor_inimigo
 
     hub = NoneHub(broadcast_channel=blt.TX_RABO,
                   observe_channels=[blt.TX_CABECA])
 
     globais.init(hub, True, True, nome="rabo")
 
-    led = Led(2)
-    led.on()
+    led = Led(2, invert=False); led.on()
 
-    i2c = [
-        I2C(0, scl=Pin(19), sda=Pin(21), freq=100000),
-        I2C(1, scl=Pin(25), sda=Pin(26), freq=100000),
+    i2c_cubo    =     I2C(1, scl=Pin(33), sda=Pin(25), freq=100000)
+    i2c_caçamba =     I2C(0, scl=Pin(19), sda=Pin(21), freq=100000)
+    i2c_inimigo = SoftI2C(   scl=Pin(22), sda=Pin(23), freq=100000)
+    #i2c_extra   = SoftI2C(   scl=Pin(13), sda=Pin(12), freq=100000)
+    #! pino 13 dá ruim, tem que trocar
+
+    LOG(f"i2c: caçamba{i2c_caçamba.scan()},",
+                f"cubo{i2c_cubo.scan()}", end=" ")
+
+    sensor_cubo    = SensorCombinado(i2c_cubo,    offset=-100)#! investigar pq offset
+    sensor_caçamba = SensorCombinado(i2c_caçamba, offset=-50) #! investigar pq offset
+    sensor_inimigo = SensorDist(i2c_inimigo,      offset=-70) #! investigar pq offset
+
+    LOG(f"-> i2c: caçamba{i2c_caçamba.scan()},",
+                   f"cubo{i2c_cubo.scan()}")
+
+    servo_garra, *_ = servos = [
+        Servo(Pin(17)), Servo(Pin(18))
     ]
+    servo_garra.angle(ANG_GARRA_ABERTA, wait=200)
+    for s in servos: s.off()
 
-    sensor_caçamba = TCS34725(i2c[0])
-    sensor_cubo    = TCS34725(i2c[1])
-
-    LOG(f"i2c: caçamba{sensor_caçamba.i2c.scan()},",
-                f"cubo{sensor_cubo.i2c.scan()}")
+    barra_led = NeoPixel(Pin(5), 12)
 
     timer = millis()
     return hub
@@ -78,11 +164,15 @@ def main(hub):
     cmd = None
     cor_caçamba = cor_garra = 0
     while True:
-        cor_garra   = sensor_cubo.cor()
-        cor_caçamba = sensor_caçamba.cor()
+        cor_cubo     = sensor_cubo.cor()
+        dist_cubo    = sensor_cubo.dist()
+        cor_caçamba  = sensor_caçamba.cor()
+        dist_caçamba = sensor_caçamba.dist()
+        dist_inimigo = sensor_inimigo.dist()
 
-        LOG(f"caçamba: {Cor(cor_caçamba)}\t",
-              f"garra: {Cor(cor_garra)}")
+        LOG(f"caçamba: {Cor(cor_caçamba)} a {dist_caçamba}mm",
+              f"garra: {Cor(cor_cubo)} a {dist_cubo}mm",
+            f"inimigo: a {dist_inimigo}mm", sep="\t")
 
         if (millis() - timer) > 1000:
             timer = millis()
@@ -99,10 +189,26 @@ def main(hub):
         if   comando == blt.cmd.ver_cor_sensor_braco: #! nomes
             blt.enviar_resposta(blt.rsp.cor_sensor_braco, cor_caçamba) #!
         elif comando == blt.cmd.ver_cor_sensor_rabo: #!
-            blt.enviar_resposta(blt.rsp.cor_sensor_rabo, cor_garra) #!
+            blt.enviar_resposta(blt.rsp.cor_sensor_rabo, cor_cubo) #!
+        elif comando == blt.cmd.fecha_garra:
+            servo_garra.angle(ANG_GARRA_FECHADA)
+            blt.enviar_resposta(blt.rsp.fechei)
+        elif comando == blt.cmd.abre_garra:
+            servo_garra.angle(ANG_GARRA_ABERTA)
+            blt.enviar_resposta(blt.rsp.abri)
+        elif comando == blt.cmd.mostrar_cor:
+            cor, = args
+            barra_led.fill(cor_to_rgb(cor_cubo))
+            barra_led.write()
+            blt.enviar_comando
+        #LOG(cor_to_rgb(cor_cubo))(blt.rsp.mostrei_cor)
 
 
 if __name__ == "__main__":
+    if True: # DEBUG
+        LOG("MODO DEBUG"); main(setup());
+        raise KeyboardInterrupt
+
     while True:
         try:
             hub = setup()

@@ -1,8 +1,9 @@
 from pybricks.hubs import PrimeHub
 
 from pybricks.pupdevices import Motor, ColorSensor, UltrasonicSensor
-from pybricks.parameters import Port, Button, Color, Direction, Side
+from pybricks.parameters import Port, Button, Color, Direction, Side, Stop
 from pybricks.tools      import wait, StopWatch
+
 from cores import Cor
 from comum import globais, bipes, luzes
 from comum import LOG, ERRO, ASSERT
@@ -10,42 +11,37 @@ from comum import LOG, ERRO, ASSERT
 import bluetooth as blt
 
 import cores
-import garra
 
 
-#! se a gente girar a garra na mão, mesmo resetando a cabeça, o estado da garra no braço se mantém e a gente se fode.
+grau_mm = 6000/630 # 9.52º/mm -> 95.2º/cm
+DESCIDA_MAX_GARRA  = 160#mm
+DESCIDA_PLATAFORMA = 80#mm
+VEL_DESCER_GARRA   = 800
+
+RAIO_ENGRENAGEM = 9#mm
+DIST_PLATAFORMA = 60#mm
+ANG_PLATAFORMA  = DIST_PLATAFORMA*RAIO_ENGRENAGEM
+
 
 def setup():
-    global garra_fechada, garra_levantada, garra_altura_sensor
-    global sensor_dist_dir
+    global plataforma_estendida, descida_atual_garra
 
-    garra_levantada = False
-    garra_fechada   = False
-    garra_altura_sensor = False
+    plataforma_estendida = False
+    descida_atual_garra = 0
 
     hub = PrimeHub(broadcast_channel=blt.TX_BRACO,
                    observe_channels=[blt.TX_CABECA])
     hub.display.orientation(Side.BOTTOM)
     globais.init(hub, TESTE, DEBUG, nome="braço")
 
-    globais.motor_garra    = Motor(Port.B, Direction.COUNTERCLOCKWISE)
-    globais.motor_vertical = Motor(Port.A, Direction.COUNTERCLOCKWISE)
-
-    sensor_dist_dir = UltrasonicSensor(Port.E)
-
-    LOG("ligando arduino")
-    try:
-        from pybricks.pupdevices import DCMotor
-        arduino = DCMotor(Port.F); arduino.dc(100)
-        LOG("arduino ligado")
-    except OSError:
-        ERRO("ARDUINO NÃO CONECTADO!")
+    globais.motor_guindaste  = Motor(Port.C, Direction.CLOCKWISE)
+    globais.motor_plataforma = Motor(Port.D, Direction.CLOCKWISE)
 
     hub.system.set_stop_button((Button.CENTER,))
     return hub
 
 def main():
-    global garra_fechada, garra_levantada, garra_altura_sensor
+    global plataforma_estendida, descida_atual_garra
 
     cmd = None
     while True:
@@ -57,50 +53,105 @@ def main():
         if cmd != antes:
             LOG(f"{blt.cmd(comando)}{args}")
 
-        if   comando == blt.cmd.fecha_garra:
-            if not garra_fechada:
-                LOG("fechando")
-                ang = garra.fecha_garra()
-                garra_fechada = True
-            blt.enviar_comando(blt.rsp.fechei, ang)
-        elif comando == blt.cmd.abre_garra:
-            if garra_fechada:
-                LOG("abrindo")
-                garra.abre_garra()
-                garra_fechada = False
-            blt.enviar_comando(blt.rsp.abri)
-
         elif comando == blt.cmd.levanta_garra:
-            if not garra_levantada:
-                LOG("levantando")
-                garra.levanta_garra()
-                garra_levantada = True
-            blt.enviar_comando(blt.rsp.levantei)
+            levanta_garra()
+            blt.enviar_comando(blt.rsp.levantei_garra)
+        elif comando == blt.cmd.media_garra:
+            media_garra()
+            blt.enviar_comando(blt.rsp.mediei_garra)
         elif comando == blt.cmd.abaixa_garra:
-            if garra_levantada:
-                LOG("abaixando")
-                garra.abaixa_garra()
-                garra_levantada = False
-            blt.enviar_comando(blt.rsp.abaixei)
+            abaixa_garra()
+            blt.enviar_comando(blt.rsp.abaixei_garra)
 
         elif comando == blt.cmd.levanta_garra_dist_sensor:
-            if not garra_levantada and not garra_altura_sensor:
-                LOG("levantando")
-                garra.levanta_garra_dist_sensor()
-                garra_altura_sensor = True
+            ASSERT(False, "levanta_garra_dist_sensor não existe")
             blt.enviar_comando(blt.rsp.levantei_dist_sensor)
 
-        elif comando == blt.cmd.ver_dist_sensor_braco:
-            dist = sensor_dist_dir.distance()
-            blt.enviar_comando(blt.rsp.dist_sensor_braco, dist)
         elif comando == blt.cmd.mostrar_cor:
             cor, = args
             luzes.mostrar(Cor(cor = cor).color)
             blt.enviar_comando(blt.rsp.mostrei_cor)
+
+        elif comando == blt.cmd.estende_plataforma:
+            if not plataforma_estendida:
+                LOG("estendendo")
+                estende_plataforma()
+                plataforma_estendida = True
+            blt.enviar_comando(blt.rsp.estendi)
+        elif comando == blt.cmd.retrai_plataforma:
+            if plataforma_estendida:
+                LOG("retraindo")
+                retrai_plataforma()
+                plataforma_estendida = False
+            blt.enviar_comando(blt.rsp.retrai)
+
 def test():
     ... # testar coisas aqui sem mudar o resto do código
-    mapa_hsv = menu_calibração(sensor_cor_frente)
-    cores.repl_calibração(mapa_hsv, lado="frente")
+    LOG("retrai_plataforma")
+    retrai_plataforma()
+    bipes.separador()
+
+    LOG("abaixa_garra")
+    abaixa_garra()
+    bipes.separador()
+
+    LOG("levanta_garra")
+    levanta_garra()
+    bipes.separador()
+
+    LOG("estende_plataforma")
+    estende_plataforma()
+    LOG("media_garra")
+    media_garra()
+    bipes.separador()
+
+    LOG("retrai_plataforma")
+    retrai_plataforma()
+    bipes.separador()
+
+    LOG("abaixa_garra")
+    abaixa_garra()
+    LOG("media_garra")
+    media_garra()
+    LOG("estende_plataforma")
+    estende_plataforma()
+    bipes.separador()
+
+def mexer_guindaste(descida=DESCIDA_MAX_GARRA, vel=VEL_DESCER_GARRA):
+    global descida_atual_garra
+    descida_atual_garra += descida
+    globais.motor_guindaste.run_angle(
+        vel, descida*grau_mm, then=Stop.COAST, wait=True
+    )
+
+def garra_na_altura(altura, vel=VEL_DESCER_GARRA):
+    mexer_guindaste(altura - descida_atual_garra, vel=vel)
+
+def abaixa_garra(vel=VEL_DESCER_GARRA):
+    if descida_atual_garra < DESCIDA_MAX_GARRA:
+        LOG("abaixando")
+    garra_na_altura(DESCIDA_MAX_GARRA, vel=vel)
+
+def media_garra(vel=VEL_DESCER_GARRA):
+    if descida_atual_garra > DIST_PLATAFORMA:
+        LOG("levantando médio")
+    if descida_atual_garra < DIST_PLATAFORMA:
+        LOG("abaixando médio")
+    garra_na_altura(DIST_PLATAFORMA, vel=vel)
+
+def levanta_garra(vel=VEL_DESCER_GARRA):
+    if descida_atual_garra > 0:
+        LOG("levantando")
+    garra_na_altura(0, vel=vel)
+
+def levanta_garra_dist_sensor(vel=VEL_DESCER_GARRA): #! errado tudo nome e oq faz
+    ASSERT(False, "levanta_garra_dist_sensor não existe")
+
+def estende_plataforma(vel=240):
+    globais.motor_plataforma.run_angle(vel, ANG_PLATAFORMA, then=Stop.COAST, wait=True)
+
+def retrai_plataforma(vel=240):
+    globais.motor_plataforma.run_until_stalled(-vel, then=Stop.COAST, duty_limit=None)
 
 def menu_calibração(*sensores, botao_parar=Button.BLUETOOTH,
                                botao_aceitar=Button.CENTER,

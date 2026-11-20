@@ -26,13 +26,16 @@ cmd = Enum("cmd", [
     "ver_dist_sensor_braco", #! reordenar
     "levanta_garra_dist_sensor", #! reordenar
     "mostrar_cor",
+    "estende_plataforma",
+    "retrai_plataforma",
+    "media_garra",
 ])
 
 rsp = Enum("rsp", [
     "fechei",
     "abri",
-    "levantei",
-    "abaixei",
+    "levantei_garra",
+    "abaixei_garra",
     "cor_sensor_braco",
     "hsv_sensor_braco",
     "distancias_deprecado", #! retirar quando mexer na ordem, fazer upload em tudo
@@ -40,6 +43,9 @@ rsp = Enum("rsp", [
     "dist_sensor_braco", #! reordenar
     "levantei_dist_sensor", #! reordenar
     "mostrei_cor",
+    "estendi",
+    "retrai",
+    "mediei_garra",
 ])
 
 #! mudar alguns nomes depois
@@ -74,23 +80,27 @@ def resetar_garra():
 
 def fechar_garra():
     enviar_comando(cmd.fecha_garra)
-    return esperar_resposta(rsp.fechei)
+    return esperar_resposta(rsp.fechei, canal=TX_RABO)
 
 def abrir_garra():
     enviar_comando(cmd.abre_garra)
-    return esperar_resposta(rsp.abri)
+    return esperar_resposta(rsp.abri, canal=TX_RABO)
 
 def levantar_garra():
     enviar_comando(cmd.levanta_garra)
-    return esperar_resposta(rsp.levantei)
+    return esperar_resposta(rsp.levantei_garra)
 
 def levantar_garra_dist_sensor():
-    enviar_comando(cmd.levanta_garra_dist_sensor)
-    return esperar_resposta(rsp.levantei_dist_sensor)
+    ASSERT(False, "levanta_garra_dist_sensor não existe")
+    return None
+
+def mediar_garra():
+    enviar_comando(cmd.media_garra)
+    return esperar_resposta(rsp.mediei_garra)
 
 def abaixar_garra():
     enviar_comando(cmd.abaixa_garra)
-    return esperar_resposta(rsp.abaixei)
+    return esperar_resposta(rsp.abaixei_garra)
 
 def ver_cor_cubo():
     enviar_comando(cmd.ver_cor_sensor_rabo)
@@ -110,3 +120,11 @@ def ver_dist_caçamba():
 def mostrar_cor(cor):
     enviar_comando(cmd.mostrar_cor, cor.cor)
     return esperar_resposta(rsp.mostrei_cor)
+
+def estender_plataforma():
+    enviar_comando(cmd.estende_plataforma)
+    return esperar_resposta(rsp.estendi)
+
+def retrair_plataforma():
+    enviar_comando(cmd.retrai_plataforma)
+    return esperar_resposta(rsp.retrai)

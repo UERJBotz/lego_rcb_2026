@@ -119,8 +119,8 @@ def main():
 
     while True:
         LOG("main: resetou", conta_reset, "vezes")
-        blt.resetar_garra()
-        blt.abaixar_garra()
+        blt.levantar_garra()
+        blt.retrair_plataforma()
         posicionamento_inicial()
         pos_estimada = (0,0)
 
@@ -171,7 +171,7 @@ def test():
     global orientação_estimada, pos_estimada, na_grade, cores_caçambas
     ... # testar coisas aqui sem mudar o resto do código
     blt.SILENCIOSO = True
-    
+
     while False:
         cor = blt.ver_cor_cubo()
         print(cor)
@@ -195,11 +195,10 @@ def test():
 
     while False:
         blt.abrir_garra()
-        ang = blt.fechar_garra()
-        print(ang)
+        blt.fechar_garra()
 
     if False: testes.imprimir_cor_cubo_para_sempre()
-    if False: testes.imprimir_cor_caçamba_para_sempre()
+    if True: testes.imprimir_cor_caçamba_para_sempre()
 
     while False:
         if True: vel = 50 # mudar quando testar
@@ -272,8 +271,56 @@ def test():
             dar_ré(DIST_VERDE_CAÇAMBA)
         return
 
+    if False:
+        blt.abrir_garra()
+        blt.fechar_garra()
+        bipes.separador()
+    if False:
+        blt.abaixar_garra()
+        blt.levantar_garra()
+        bipes.separador()
+    if False:
+        blt.retrair_plataforma()
+        blt.estender_plataforma()
+        blt.retrair_plataforma()
+        bipes.separador()
+
     if True:
-        main()
+        LOG("retrai_plataforma")
+        blt.retrair_plataforma()
+        bipes.separador()
+
+        LOG("abaixa_garra")
+        blt.abrir_garra()
+        blt.abaixar_garra()
+        bipes.separador()
+
+        LOG("levanta_garra")
+        blt.fechar_garra()
+        blt.levantar_garra()
+        bipes.separador()
+
+        LOG("estender_plataforma")
+        blt.estender_plataforma()
+        LOG("mediar_garra")
+        blt.mediar_garra()
+        blt.abrir_garra()
+        blt.levantar_garra()
+        bipes.separador()
+
+        LOG("retrai_plataforma")
+        blt.retrair_plataforma()
+        bipes.separador()
+
+        LOG("estende_plataforma")
+        blt.estender_plataforma()
+        bipes.separador()
+
+        LOG("mediar_garra")
+        blt.mediar_garra()
+        blt.fechar_garra()
+        blt.levantar_garra()
+        bipes.separador()
 
     LOG("fim do teste")
 
@@ -753,30 +800,6 @@ def posicionamento_inicial():
             orientação_estimada = "O"
             virar_direita()
 
-'''def posicionamento():
-    global orientação_estimada
-
-    viu_vermelho = False
-    while not (viu_vermelho and orientação_estimada == "L"):
-        esq, dir = achar_não_verde_alinhado()
-
-        bipes.separador()
-        if   esq.beco() or dir.beco():
-            #ASSERT(esq.beco() and dir.beco(), f"pos_ini: {esq} == {dir}")
-            dar_ré_alinhar_primeiro_bloco()
-            viu_vermelho = True
-            virar_esquerda()
-        elif esq.azul() or dir.azul():
-            #ASSERT(esq.azul() and dir.azul(), f"pos_ini: {esq} == {dir}")
-            dar_ré_meio_quarteirão()
-            orientação_estimada = "L"
-            virar_direita()
-        else:
-            #ASSERT(esq.amarelo() or dir.amarelo(), f"pos_ini: {esq} e {dir} assumidos amarelo")
-            dar_ré_meio_quarteirão()
-            orientação_estimada = "O"
-            virar_esquerda()'''
-
 def colocar_cubo_na_caçamba(cor_cubo, max_cubos=NUM_CUBOS_PEGÁVEIS):
     global cubos_caçambas
     margem      = TAM_CUBO//2 if max_cubos != 1 else (TAM_CUBO*3)//2
@@ -827,8 +850,8 @@ def colocar_cubo_na_caçamba(cor_cubo, max_cubos=NUM_CUBOS_PEGÁVEIS):
 
 #! considerar adversário
 def varredura(pos_estimada, caçambas):
-    blt.resetar_garra()
-    blt.abaixar_garra()
+    blt.retrair_plataforma()
+    blt.mediar_garra()
 
     y, x = pos_estimada #! para procura genérico, usar y também
 
@@ -840,14 +863,12 @@ def varredura(pos_estimada, caçambas):
         andar_dist_linha(DIST_VER_CUBO)
         x += 1 #! para procura genérico, considerar orientação
 
-        ang = blt.fechar_garra()
         cor = blt.ver_cor_cubo()
-        if ang > ANG_LIMIAR_GARRA_FECHADA or cor == Cor.enum.NENHUMA: #! constantizar
-            LOG("varredura: cel livre fechou tudo")
-
+        if cor == Cor.enum.NENHUMA:
+            LOG("varredura: cel livre cor NENHUMA*")
             tira_obstaculo((y,x))
-            blt.abrir_garra()
         else:
+            blt.fechar_garra()
             luzes.mostrar(cor.color) #! fzr printar em braco
             break
 
@@ -897,8 +918,8 @@ def procura(pos_estimada, cores_caçambas):
         len(caminhos_incertas[x]) if caminhos_incertas[x] is not None else 9000
     ))
 
-    blt.resetar_garra()
-    blt.abaixar_garra()
+    blt.retrair_plataforma()
+    blt.mediar_garra()
     for cel_destino in cel_incertas:
         LOG("tentando de", cel_atual, "até :", cel_destino)
 
@@ -919,21 +940,13 @@ def procura(pos_estimada, cores_caçambas):
 
         # vê se tem alguma coisa na frente
         andar_dist_linha(DIST_CRUZAMENTO_CUBO)
-        ang = blt.fechar_garra()
-        if ang > 145: #! constantizar
-            LOG("procura: cel livre fechou tudo")
-            tira_obstaculo(cel_destino)
-            achar_cruzamento_linha(dist_max=TAM_QUARTEIRÃO)
-            cel_atual = cel_destino
-            blt.abrir_garra()
-            continue
 
         cor = blt.ver_cor_cubo()
         blt.mostrar_cor(cor)
         if cor == Cor.enum.BRANCO:
             bipes.cabeca()
         if cor == Cor.enum.NENHUMA:
-            LOG("procura: cel livre viu NENHUM")
+            LOG("procura: cel livre viu cor.NENHUMA*")
             tira_obstaculo(cel_destino)
             achar_cruzamento_linha(dist_max=TAM_QUARTEIRÃO)
             cel_atual = cel_destino
@@ -978,19 +991,19 @@ def descobrir_cor_caçambas():
     for i in range(NUM_CAÇAMBAS):
         cores_caçambas[i] = blt.ver_cor_caçamba()
         bipes.cabeca()
-        dist = blt.ver_dist_caçamba()
+        #dist = blt.ver_dist_caçamba()
 
-        #! rataria cores caçambas
-        if cores_caçambas[i].cor == Cor.enum.MARROM:
-            cores_caçambas[i] = Cor(cor=Cor.enum.AMARELO)
+        ##! rataria cores caçambas
+        #if cores_caçambas[i].cor == Cor.enum.MARROM:
+        #    cores_caçambas[i] = Cor(cor=Cor.enum.AMARELO)
         #if cores_caçambas[i].cor == Cor.enum.PRETO:
         #    if False: cores_caçambas[i] = Cor(cor=Cor.enum.AZUL)
         #    else:    cores_caçambas[i] = Cor(cor=Cor.enum.VERDE)
-        if cores_caçambas[i].cor == Cor.enum.NENHUMA:
-            if dist < TAM_QUARTEIRÃO:
-                cores_caçambas[i] = Cor(cor=Cor.enum.PRETO)
+        #if cores_caçambas[i].cor == Cor.enum.NENHUMA:
+        #    if dist < TAM_QUARTEIRÃO:
+        #        cores_caçambas[i] = Cor(cor=Cor.enum.PRETO)
 
-        LOG(f"descobrir_cor_caçamba: caçamba {cores_caçambas[i]} a {dist/10}cm")
+        LOG(f"descobrir_cor_caçamba: caçamba {cores_caçambas[i]}")# a {dist/10}cm")
 
         if i+1 < NUM_CAÇAMBAS:
             andar_dist_linha(TAM_CAÇAMBA+DIST_CAÇAMBA, vel = 80)
@@ -998,7 +1011,7 @@ def descobrir_cor_caçambas():
     rodas.turn(10)
     dar_ré(TAM_BLOCO//4)
     rodas.turn(-20)
-   
+
 class testes:
     @staticmethod
     def imprimir_cor_caçamba_para_sempre():
