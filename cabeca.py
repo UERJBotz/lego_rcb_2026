@@ -198,7 +198,7 @@ def test():
         blt.fechar_garra()
 
     if False: testes.imprimir_cor_cubo_para_sempre()
-    if True: testes.imprimir_cor_caçamba_para_sempre()
+    if False: testes.imprimir_cor_caçamba_para_sempre()
 
     while False:
         if True: vel = 50 # mudar quando testar
@@ -242,11 +242,16 @@ def test():
         cores_caçambas = [
             Cor.enum.NENHUMA for _ in range(NUM_CAÇAMBAS)
         ]
-        if True: cores_caçambas[0] = Cor.enum.VERMELHO
-        if True: cores_caçambas[1] = Cor.enum.AMARELO
-        if True: cores_caçambas[2] = Cor.enum.AZUL
-        if True: cores_caçambas[3] = Cor.enum.VERDE
-        if True: cores_caçambas[4] = Cor.enum.PRETO
+        if True: cores_caçambas[0] = Cor.VERMELHO
+        if True: cores_caçambas[1] = Cor.AMARELO
+        if True: cores_caçambas[2] = Cor.AZUL
+        if True: cores_caçambas[3] = Cor.VERDE
+        if True: cores_caçambas[4] = Cor.PRETO
+        blt.SILENCIOSO = False
+        LOG("cores_caçambas: ", cores_caçambas)
+        blt.mostrar_cor_caçambas(cores_caçambas)
+
+
 
     if False: orientação_estimada = "N"
     if False: orientação_estimada = "S"
@@ -285,7 +290,7 @@ def test():
         blt.retrair_plataforma()
         bipes.separador()
 
-    if True:
+    if False:
         LOG("retrai_plataforma")
         blt.retrair_plataforma()
         bipes.separador()
@@ -1005,6 +1010,7 @@ def descobrir_cor_caçambas():
 
     for i in range(NUM_CAÇAMBAS):
         cores_caçambas[i] = blt.ver_cor_caçamba()
+        blt.mostrar_caçamba(i - 2, cores_caçambas[i])
         bipes.cabeca()
         #dist = blt.ver_dist_caçamba()
 

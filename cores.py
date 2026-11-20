@@ -67,6 +67,17 @@ class Cor:
     def parede(self):     return self.preto()
     def beco(self):       return self.vermelho()
 
+    @classmethod
+    def init(cls):
+        cls.NENHUMA  = Cor(cor=cor.NENHUMA)
+        cls.PRETO    = Cor(cor=cor.PRETO)
+        cls.AZUL     = Cor(cor=cor.AZUL)
+        cls.VERDE    = Cor(cor=cor.VERDE)
+        cls.AMARELO  = Cor(cor=cor.AMARELO)
+        cls.VERMELHO = Cor(cor=cor.VERMELHO)
+        cls.BRANCO   = Cor(cor=cor.BRANCO)
+        cls.MARROM   = Cor(cor=cor.MARROM)
+
 def Color2tuple(color): #! falhar mais alto
     try:    return color.h, color.s, color.v
     except: return None #! except
@@ -214,3 +225,6 @@ def repl_calibração(mapa_hsv, lado=""):
     for c in Cor.enum:
         print(f"\t{mapa_hsv[Cor.enum[c]]}, #{c}")
     print("]")
+
+## Inicialização da classe Cor
+Cor.init()

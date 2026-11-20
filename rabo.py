@@ -46,6 +46,10 @@ def cor_to_rgb(cor):
         Cor.MARROM:   (139, 69, 19),
     }[cor]
 
+def barra_led_cor(led, cor):
+    barra_led[led] = cor_to_rgb(cor)
+    barra_led.write()
+
 
 class Servo(PWM):
     def __init__(self, pin, min_angle=0,   max_angle=90,
@@ -135,7 +139,7 @@ def setup():
     i2c_caçamba =     I2C(0, scl=Pin(19), sda=Pin(21), freq=100000)
     i2c_inimigo = SoftI2C(   scl=Pin(22), sda=Pin(23), freq=100000)
     #i2c_extra   = SoftI2C(   scl=Pin(13), sda=Pin(12), freq=100000)
-    #! pino 13 dá ruim, tem que trocar
+    #! pino 12 dá ruim, tem que trocar
 
     LOG(f"i2c: caçamba{i2c_caçamba.scan()},",
                 f"cubo{i2c_cubo.scan()}", end=" ")
@@ -170,6 +174,16 @@ def main(hub):
         dist_caçamba = sensor_caçamba.dist()
         dist_inimigo = sensor_inimigo.dist()
 
+        if cor_cubo == Cor.BRANCO:
+            barra_led.fill(cor_to_rgb(Cor.BRANCO))
+            barra_led.write()
+        else:
+            barra_led_cor(6, cor_cubo)
+            barra_led_cor(9, cor_caçamba)
+
+        
+        #barra_led_cor(1, AZUL)
+
         LOG(f"caçamba: {Cor(cor_caçamba)} a {dist_caçamba}mm",
               f"garra: {Cor(cor_cubo)} a {dist_cubo}mm",
             f"inimigo: a {dist_inimigo}mm", sep="\t")
@@ -200,8 +214,14 @@ def main(hub):
             cor, = args
             barra_led.fill(cor_to_rgb(cor_cubo))
             barra_led.write()
-            blt.enviar_comando
-        #LOG(cor_to_rgb(cor_cubo))(blt.rsp.mostrei_cor)
+            blt.enviar_resposta(blt.rsp.mostrei_cor)
+            #LOG(cor_to_rgb(cor_cubo))(blt.rsp.mostrei_cor)
+        elif comando == blt.cmd.mostrar_caçamba:
+            index, cor = args
+            barra_led_cor(index, cor)
+            LOG(f"mostrando caçamba {index} com cor {Cor(cor)}")
+            blt.enviar_resposta(blt.rsp.mostrei_caçamba)
+
 
 
 if __name__ == "__main__":
