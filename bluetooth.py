@@ -29,6 +29,7 @@ cmd = Enum("cmd", [
     "estende_plataforma",
     "retrai_plataforma",
     "media_garra",
+    "mostrar_caçamba",
 ])
 
 rsp = Enum("rsp", [
@@ -46,6 +47,7 @@ rsp = Enum("rsp", [
     "estendi",
     "retrai",
     "mediei_garra",
+    "mostrei_caçamba",
 ])
 
 #! mudar alguns nomes depois
@@ -128,3 +130,11 @@ def estender_plataforma():
 def retrair_plataforma():
     enviar_comando(cmd.retrai_plataforma)
     return esperar_resposta(rsp.retrai)
+
+def mostrar_caçamba(index, cor):
+    enviar_comando(cmd.mostrar_caçamba, index, cor.cor)
+    return esperar_resposta(rsp.mostrei_caçamba, canal=TX_RABO)
+
+def mostrar_cor_caçambas(cores_caçambas):
+    for i in range(len(cores_caçambas)):
+        mostrar_caçamba(i - 2, cores_caçambas[i])
