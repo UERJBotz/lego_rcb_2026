@@ -83,10 +83,10 @@ def main():
                 retrai_plataforma()
                 plataforma_estendida = False
             blt.enviar_comando(blt.rsp.retrai)
-        elif comando == blt.cmd.sacodi_plataforma:
+        elif comando == blt.cmd.sacode_plataforma:
             num_sacudidas, = args
             LOG("sacodindo")
-            sacodi_plataforma(num_sacudidas)
+            sacode_plataforma(num_sacudidas)
             blt.enviar_comando(blt.rsp.sacodi)
 
 def test():
@@ -172,7 +172,7 @@ def estende_plataforma(vel=VEL_RETRAIR_PLATAFORMA):
 def retrai_plataforma(vel=VEL_RETRAIR_PLATAFORMA):
     globais.motor_plataforma.run_until_stalled(-vel, then=Stop.COAST, duty_limit=None)
 
-def sacodi_plataforma(num_sacudidas, vel=VEL_RETRAIR_PLATAFORMA):
+def sacode_plataforma(num_sacudidas, vel=VEL_RETRAIR_PLATAFORMA):
     for _ in range(num_sacudidas):
         globais.motor_plataforma.run_angle(vel, ANG_PLATAFORMA/4, then=Stop.HOLD, wait=True)
         retrai_plataforma(vel=vel*10)
