@@ -135,11 +135,11 @@ def setup():
 
     led = Led(2, invert=False); led.on()
 
-    i2c_cubo    =     I2C(1, scl=Pin(33), sda=Pin(25), freq=100000)
-    i2c_caçamba =     I2C(0, scl=Pin(19), sda=Pin(21), freq=100000)
+    #! i2c_extra   = SoftI2C(   scl=Pin(13), sda=Pin(27), freq=100000)
+    #! ^ às vezes tem que reiniciar depois de fazer upload pra ele funcionar
+    i2c_caçamba =     I2C(0, scl=Pin(33), sda=Pin(25), freq=100000)
+    i2c_cubo    =     I2C(1, scl=Pin(19), sda=Pin(21), freq=100000)
     i2c_inimigo = SoftI2C(   scl=Pin(22), sda=Pin(23), freq=100000)
-    #i2c_extra   = SoftI2C(   scl=Pin(13), sda=Pin(12), freq=100000)
-    #! pino 12 dá ruim, tem que trocar
 
     LOG(f"i2c: caçamba{i2c_caçamba.scan()},",
                 f"cubo{i2c_cubo.scan()}", end=" ")
@@ -176,14 +176,14 @@ def main(hub):
 
         barra_led_cor(6, cor_cubo)
         barra_led_cor(9, cor_caçamba)
-        
-        #LOG(f"caçamba: {Cor(cor_caçamba)} a {dist_caçamba}mm",
-        #      f"garra: {Cor(cor_cubo)} a {dist_cubo}mm",
-        #    f"inimigo: a {dist_inimigo}mm", sep="\t")
 
-        if (millis() - timer) > 1000:
+        if (millis() - timer) > 250:
             timer = millis()
             led.toggle()
+
+            LOG(f"caçamba: {Cor(cor_caçamba)} a {dist_caçamba}mm",
+                  f"garra: {Cor(cor_cubo)} a {dist_cubo}mm",
+                f"inimigo: a {dist_inimigo}mm", sep="\t")
 
         antes, cmd = cmd, hub.ble.observe(blt.TX_CABECA)
         if cmd is not None: #! levar isso em consideração
