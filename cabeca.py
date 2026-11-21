@@ -925,6 +925,7 @@ def procura(pos_estimada, cores_caçambas):
 
     blt.retrair_plataforma()
     blt.mediar_garra()
+    blt.abrir_garra()
     for cel_destino in cel_incertas:
         LOG("tentando de", cel_atual, "até :", cel_destino)
 
@@ -946,30 +947,45 @@ def procura(pos_estimada, cores_caçambas):
         # vê se tem alguma coisa na frente
         andar_dist_linha(DIST_CRUZAMENTO_CUBO)
 
+        #! fazer igual na varredura (colocar em função)
         cor = blt.ver_cor_cubo()
-        blt.mostrar_cor(cor)
-        if cor == Cor.enum.BRANCO:
-            bipes.cabeca()
         if cor == Cor.enum.NENHUMA:
             LOG("procura: cel livre viu cor.NENHUMA*")
             tira_obstaculo(cel_destino)
             achar_cruzamento_linha(dist_max=TAM_QUARTEIRÃO)
             cel_atual = cel_destino
             continue
-        if ((cor not in cores_caçambas) or
-            (cubos_caçambas[cores_caçambas.index(cor)] >= NUM_CUBOS_PEGÁVEIS)):
-            LOG(f"procura: cubo desconhecido cor {cor}")
+
+        # blt.mostrar_cor(cor) #! colocar pra dizer que é a cor do cubo de cima ou de baixo
+        def se_deixar_cubo(cor):
+            if cor == Cor.enum.BRANCO:
+                ASSERT(cor not in cores_caçambas, "NÃO TEM CAÇAMBA BRANCA!")
+                bipes.cabeca()
+            if cor not in cores_caçambas:
+                LOG(f"procura: cubo desconhecido cor {cor}")
+                return True
+            if cubos_caçambas[cores_caçambas.index(cor)] >= NUM_CUBOS_PEGÁVEIS:
+                LOG(f"procura: cubo caçamba cheia cor {cor}")
+                return True
+
+            return False
+
+        blt.abaixar_garra()
+        blt.fechar_garra()
+        if se_deixar_cubo(cor):
             coloca_obstaculo(cel_destino)
             dar_ré(DIST_VOLTAR_CUBO) #!
             blt.abrir_garra()
-            dar_ré(DIST_CRUZAMENTO_CUBO)
+            blt.mediar_garra()
+            dar_ré(DIST_CRUZAMENTO_CUBO + DIST_EIXO_SENSOR)
             continue
+        blt.mediar_garra() #! levantar?
 
         imprimir_mapa()
 
         LOG(f"procura: cubo cor {cor}")
         tira_obstaculo(cel_destino)
-        dar_ré(DIST_CRUZAMENTO_CUBO)
+        dar_ré(DIST_CRUZAMENTO_CUBO + 2*DIST_EIXO_SENSOR)
         return cor, cel_atual
 
     imprimir_mapa()
