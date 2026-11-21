@@ -174,19 +174,12 @@ def main(hub):
         dist_caçamba = sensor_caçamba.dist()
         dist_inimigo = sensor_inimigo.dist()
 
-        if cor_cubo == Cor.BRANCO:
-            barra_led.fill(cor_to_rgb(Cor.BRANCO))
-            barra_led.write()
-        else:
-            barra_led_cor(6, cor_cubo)
-            barra_led_cor(9, cor_caçamba)
-
+        barra_led_cor(6, cor_cubo)
+        barra_led_cor(9, cor_caçamba)
         
-        #barra_led_cor(1, AZUL)
-
-        LOG(f"caçamba: {Cor(cor_caçamba)} a {dist_caçamba}mm",
-              f"garra: {Cor(cor_cubo)} a {dist_cubo}mm",
-            f"inimigo: a {dist_inimigo}mm", sep="\t")
+        #LOG(f"caçamba: {Cor(cor_caçamba)} a {dist_caçamba}mm",
+        #      f"garra: {Cor(cor_cubo)} a {dist_cubo}mm",
+        #    f"inimigo: a {dist_inimigo}mm", sep="\t")
 
         if (millis() - timer) > 1000:
             timer = millis()
@@ -212,15 +205,16 @@ def main(hub):
             blt.enviar_resposta(blt.rsp.abri)
         elif comando == blt.cmd.mostrar_cor:
             cor, = args
-            barra_led.fill(cor_to_rgb(cor_cubo))
+            barra_led.fill(cor_to_rgb(cor))
             barra_led.write()
+            LOG(f"mostrando cor tudo {Cor(cor)}")
             blt.enviar_resposta(blt.rsp.mostrei_cor)
-            #LOG(cor_to_rgb(cor_cubo))(blt.rsp.mostrei_cor)
-        elif comando == blt.cmd.mostrar_caçamba:
-            index, cor = args
-            barra_led_cor(index, cor)
-            LOG(f"mostrando caçamba {index} com cor {Cor(cor)}")
-            blt.enviar_resposta(blt.rsp.mostrei_caçamba)
+        elif comando == blt.cmd.mostra_caçambas:
+            cores = args
+            for i, cor in enumerate(cores):
+                barra_led_cor(i-2, cor)
+                LOG(f"mostrando caçamba {i} com cor {Cor(cor)}")
+            blt.enviar_resposta(blt.rsp.mostrei_caçambas)
 
 
 

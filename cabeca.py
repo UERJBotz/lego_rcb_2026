@@ -247,16 +247,16 @@ def test():
         if True: cores_caçambas[2] = Cor.AZUL
         if True: cores_caçambas[3] = Cor.VERDE
         if True: cores_caçambas[4] = Cor.PRETO
-        blt.SILENCIOSO = False
-        LOG("cores_caçambas: ", cores_caçambas)
-        blt.mostrar_cor_caçambas(cores_caçambas)
-
-
+        blt.mostrar_caçambas(cores_caçambas)
 
     if False: orientação_estimada = "N"
     if False: orientação_estimada = "S"
     if False: orientação_estimada = "L"
     if False: orientação_estimada = "O"
+
+    if True:
+        main()
+
 
     if False:
         pos_estimada = (0,0)
@@ -995,25 +995,16 @@ def descobrir_cor_caçambas():
 
     for i in range(NUM_CAÇAMBAS):
         cores_caçambas[i] = blt.ver_cor_caçamba()
-        blt.mostrar_caçamba(i - 2, cores_caçambas[i])
+        blt.mostrar_caçambas(cores_caçambas[:i+1])
         bipes.cabeca()
-        #dist = blt.ver_dist_caçamba()
 
-        ##! rataria cores caçambas
-        #if cores_caçambas[i].cor == Cor.enum.MARROM:
-        #    cores_caçambas[i] = Cor(cor=Cor.enum.AMARELO)
-        #if cores_caçambas[i].cor == Cor.enum.PRETO:
-        #    if False: cores_caçambas[i] = Cor(cor=Cor.enum.AZUL)
-        #    else:    cores_caçambas[i] = Cor(cor=Cor.enum.VERDE)
-        #if cores_caçambas[i].cor == Cor.enum.NENHUMA:
-        #    if dist < TAM_QUARTEIRÃO:
-        #        cores_caçambas[i] = Cor(cor=Cor.enum.PRETO)
-
-        LOG(f"descobrir_cor_caçamba: caçamba {cores_caçambas[i]}")# a {dist/10}cm")
+        LOG(f"descobrir_cor_caçamba: caçamba {cores_caçambas[i]}")
 
         if i+1 < NUM_CAÇAMBAS:
             andar_dist_linha(TAM_CAÇAMBA+DIST_CAÇAMBA, vel = 80)
     LOG(f"descobrir_cor_caçamba: cores_caçambas = {cores_caçambas}")
+    blt.mostrar_caçambas(cores_caçambas)
+
     rodas.turn(10)
     dar_ré(TAM_BLOCO//4)
     rodas.turn(-20)
