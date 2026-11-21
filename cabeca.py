@@ -254,7 +254,7 @@ def test():
     if False: orientação_estimada = "L"
     if False: orientação_estimada = "O"
 
-    if True:
+    if False:
         main()
 
 
@@ -315,17 +315,35 @@ def test():
 
         LOG("retrai_plataforma")
         blt.retrair_plataforma()
+        blt.sacodir_plataforma(2)
         bipes.separador()
 
-        LOG("estende_plataforma")
-        blt.estender_plataforma()
+
+        #Colocou um cubo na plataforma.
+
+        LOG("abaixa_garra")
+        blt.abaixar_garra()
         bipes.separador()
 
-        LOG("mediar_garra")
-        blt.mediar_garra()
+        LOG("levanta_garra")
         blt.fechar_garra()
         blt.levantar_garra()
         bipes.separador()
+
+        #Pegou segundo cubo.
+
+        LOG("Colocando segundo cubo na caçamba")
+        blt.mediar_garra()
+        blt.abrir_garra()
+        blt.levantar_garra()
+        bipes.separador()
+
+        LOG("Colocando primeiro cubo na caçamba")
+        blt.estender_plataforma()
+        blt.mediar_garra()
+        blt.fechar_garra()
+        blt.retrair_plataforma()
+        blt.abrir_garra()
 
     LOG("fim do teste")
 
