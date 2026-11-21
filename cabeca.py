@@ -170,7 +170,36 @@ def main():
 def test():
     global orientação_estimada, pos_estimada, na_grade, cores_caçambas
     ... # testar coisas aqui sem mudar o resto do código
+
     blt.SILENCIOSO = True
+
+    if False:
+        if False: tira_obstaculo((0,2))
+        if False: tira_obstaculo((0,4))
+        if False: tira_obstaculo((1,5))
+        if False: tira_obstaculo((2,4))
+        if False: tira_obstaculo((3,3))
+        if False: tira_obstaculo((4,4))
+
+        if True:
+            cores_caçambas = [
+                Cor.enum.NENHUMA for _ in range(NUM_CAÇAMBAS)
+            ]
+            if True: cores_caçambas[0] = Cor.VERMELHO
+            if True: cores_caçambas[1] = Cor.AMARELO
+            if True: cores_caçambas[2] = Cor.AZUL
+            if True: cores_caçambas[3] = Cor.VERDE
+            if True: cores_caçambas[4] = Cor.PRETO
+            blt.mostrar_caçambas(cores_caçambas)
+
+        if False: orientação_estimada = "N"
+        if False: orientação_estimada = "S"
+        if False: orientação_estimada = "L"
+        if False: orientação_estimada = "O"
+
+        if False:
+            main()
+
 
     while False:
         cor = blt.ver_cor_cubo()
@@ -231,32 +260,10 @@ def test():
             LOG("cruzamentos: ", contador)
 
 
-    if False: tira_obstaculo((0,2))
-    if False: tira_obstaculo((0,4))
-    if False: tira_obstaculo((1,5))
-    if False: tira_obstaculo((2,4))
-    if False: tira_obstaculo((3,3))
-    if False: tira_obstaculo((4,4))
-
-    if True:
-        cores_caçambas = [
-            Cor.enum.NENHUMA for _ in range(NUM_CAÇAMBAS)
-        ]
-        if True: cores_caçambas[0] = Cor.VERMELHO
-        if True: cores_caçambas[1] = Cor.AMARELO
-        if True: cores_caçambas[2] = Cor.AZUL
-        if True: cores_caçambas[3] = Cor.VERDE
-        if True: cores_caçambas[4] = Cor.PRETO
-        blt.mostrar_caçambas(cores_caçambas)
-
-    if False: orientação_estimada = "N"
-    if False: orientação_estimada = "S"
-    if False: orientação_estimada = "L"
-    if False: orientação_estimada = "O"
-
-    if False:
-        main()
-
+    while False:
+        caca = blt.ver_dist_caçamba()
+        cubo = blt.ver_dist_cubo()
+        LOG(caca, cubo)
 
     if False:
         pos_estimada = (0,0)
@@ -280,7 +287,7 @@ def test():
         blt.abrir_garra()
         blt.fechar_garra()
         bipes.separador()
-    if False:
+    if True:
         blt.abaixar_garra()
         blt.levantar_garra()
         bipes.separador()

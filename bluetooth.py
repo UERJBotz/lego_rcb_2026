@@ -19,11 +19,11 @@ cmd = Enum("cmd", [
     "abre_garra",
     "levanta_garra",
     "abaixa_garra",
-    "ver_cor_sensor_braco",
-    "ver_hsv_sensor_braco",
-    "ver_distancias_deprecado", #! retirar quando mexer na ordem, fazer upload em tudo
-    "ver_cor_sensor_rabo",
-    "ver_dist_sensor_braco", #! reordenar
+    "ver_cor_sensor_caçamba",
+    "ver_hsv_sensor_caçamba",
+    "ver_dist_sensor_cubo",
+    "ver_cor_sensor_cubo",
+    "ver_dist_sensor_caçamba", #! reordenar
     "levanta_garra_dist_sensor", #! reordenar
     "mostrar_cor",
     "estende_plataforma",
@@ -38,11 +38,11 @@ rsp = Enum("rsp", [
     "abri",
     "levantei_garra",
     "abaixei_garra",
-    "cor_sensor_braco",
-    "hsv_sensor_braco",
-    "distancias_deprecado", #! retirar quando mexer na ordem, fazer upload em tudo
-    "cor_sensor_rabo",
-    "dist_sensor_braco", #! reordenar
+    "cor_sensor_caçamba",
+    "hsv_sensor_caçamba",
+    "dist_sensor_cubo",
+    "cor_sensor_cubo",
+    "dist_sensor_caçamba", #! reordenar
     "levantei_dist_sensor", #! reordenar
     "mostrei_cor",
     "estendi",
@@ -107,19 +107,23 @@ def abaixar_garra():
     return esperar_resposta(rsp.abaixei_garra)
 
 def ver_cor_cubo():
-    enviar_comando(cmd.ver_cor_sensor_rabo)
-    return Cor(cor=esperar_resposta(rsp.cor_sensor_rabo, canal=TX_RABO))
+    enviar_comando(cmd.ver_cor_sensor_cubo)
+    return Cor(cor=esperar_resposta(rsp.cor_sensor_cubo, canal=TX_RABO))
 
 def ver_hsv_cubo():
     return ASSERT(False, "o sensor do rabo não consegue ler hsv")
 
 def ver_cor_caçamba():
-    enviar_comando(cmd.ver_cor_sensor_braco)
-    return Cor(cor=esperar_resposta(rsp.cor_sensor_braco, canal=TX_RABO))
+    enviar_comando(cmd.ver_cor_sensor_caçamba)
+    return Cor(cor=esperar_resposta(rsp.cor_sensor_caçamba, canal=TX_RABO))
+
+def ver_dist_cubo():
+    enviar_comando(cmd.ver_dist_sensor_cubo)
+    return esperar_resposta(rsp.dist_sensor_cubo, canal=TX_RABO)
 
 def ver_dist_caçamba():
-    enviar_comando(cmd.ver_dist_sensor_braco)
-    return esperar_resposta(rsp.dist_sensor_braco)
+    enviar_comando(cmd.ver_dist_sensor_caçamba)
+    return esperar_resposta(rsp.dist_sensor_caçamba, canal=TX_RABO)
 
 def mostrar_cor(cor):
     enviar_comando(cmd.mostrar_cor, cor.cor)

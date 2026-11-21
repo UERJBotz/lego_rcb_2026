@@ -96,8 +96,8 @@ class SensorCombinado:
         self.sensor_dist = SensorDist(i2c, offset=offset, custom_address=0x30)
         self.sensor_cor  = SensorCor(i2c)
 
-    def cor_se_perto(self):
-        if (dist := self.dist()) >= 30: return Cor.NENHUMA
+    def cor_se_perto(self, perto=30):
+        if (dist := self.dist()) >= perto: return Cor.NENHUMA
 
         if (cor := self.cor()) == Cor.NENHUMA:
             return Cor.BRANCO #! ver se fazer assim mesmo
@@ -168,9 +168,9 @@ def main(hub):
     cmd = None
     cor_caçamba = cor_garra = 0
     while True:
-        cor_cubo     = sensor_cubo.cor()
+        cor_cubo     = sensor_cubo.cor_se_perto()
+        cor_caçamba  = sensor_caçamba.cor_se_perto()
         dist_cubo    = sensor_cubo.dist()
-        cor_caçamba  = sensor_caçamba.cor()
         dist_caçamba = sensor_caçamba.dist()
         dist_inimigo = sensor_inimigo.dist()
 
@@ -193,10 +193,14 @@ def main(hub):
         if cmd != antes:
             LOG(f"{blt.cmd(comando)}{args}")
 
-        if   comando == blt.cmd.ver_cor_sensor_braco: #! nomes
-            blt.enviar_resposta(blt.rsp.cor_sensor_braco, cor_caçamba) #!
-        elif comando == blt.cmd.ver_cor_sensor_rabo: #!
-            blt.enviar_resposta(blt.rsp.cor_sensor_rabo, cor_cubo) #!
+        if   comando == blt.cmd.ver_cor_sensor_caçamba:
+            blt.enviar_resposta(blt.rsp.cor_sensor_caçamba, cor_caçamba)
+        elif comando == blt.cmd.ver_dist_sensor_caçamba:
+            blt.enviar_resposta(blt.rsp.dist_sensor_caçamba, dist_caçamba)
+        elif comando == blt.cmd.ver_cor_sensor_cubo:
+            blt.enviar_resposta(blt.rsp.cor_sensor_cubo, cor_cubo)
+        elif comando == blt.cmd.ver_dist_sensor_cubo:
+            blt.enviar_resposta(blt.rsp.dist_sensor_cubo, dist_cubo)
         elif comando == blt.cmd.fecha_garra:
             servo_garra.angle(ANG_GARRA_FECHADA)
             blt.enviar_resposta(blt.rsp.fechei)
