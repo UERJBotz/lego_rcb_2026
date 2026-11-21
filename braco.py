@@ -14,21 +14,17 @@ import cores
 
 
 grau_mm = 6000/630 # 9.52º/mm -> 95.2º/cm
-DESCIDA_MAX_GARRA  = 160#mm
-DESCIDA_PLATAFORMA = 80#mm
+DESCIDA_MAX_GARRA  = 230#mm
+DESCIDA_PLATAFORMA = 120#mm
 VEL_DESCER_GARRA   = 800
 
 RAIO_ENGRENAGEM = 9#mm
 DIST_PLATAFORMA = 55#mm
 ANG_PLATAFORMA  = DIST_PLATAFORMA*RAIO_ENGRENAGEM
+VEL_RETRAIR_PLATAFORMA = 240
 
 
 def setup():
-    global plataforma_estendida, descida_atual_garra
-
-    plataforma_estendida = False
-    descida_atual_garra = 0
-
     hub = PrimeHub(broadcast_channel=blt.TX_BRACO,
                    observe_channels=[blt.TX_CABECA])
     hub.display.orientation(Side.BOTTOM)
@@ -36,6 +32,9 @@ def setup():
 
     globais.motor_guindaste  = Motor(Port.C, Direction.CLOCKWISE)
     globais.motor_plataforma = Motor(Port.D, Direction.CLOCKWISE)
+
+    reseta_plataforma()
+    reseta_guindaste()
 
     hub.system.set_stop_button((Button.CENTER,))
     return hub
@@ -117,15 +116,23 @@ def test():
     estende_plataforma()
     bipes.separador()
 
-def mexer_guindaste(descida=DESCIDA_MAX_GARRA, vel=VEL_DESCER_GARRA):
+
+def reseta_guindaste(vel=VEL_DESCER_GARRA):
     global descida_atual_garra
-    descida_atual_garra += descida
+    descida_atual_garra = 0
+    globais.motor_guindaste.run_until_stalled(-vel, then=Stop.COAST, duty_limit=None)
+    mexer_guindaste(10, vel=vel)
+
+def mexer_guindaste(descida=DESCIDA_MAX_GARRA, vel=VEL_DESCER_GARRA):
     globais.motor_guindaste.run_angle(
         vel, descida*grau_mm, then=Stop.COAST, wait=True
     )
 
 def garra_na_altura(altura, vel=VEL_DESCER_GARRA):
-    mexer_guindaste(altura - descida_atual_garra, vel=vel)
+    global descida_atual_garra
+    descida = altura - descida_atual_garra
+    descida_atual_garra += descida
+    mexer_guindaste(descida, vel=vel)
 
 def abaixa_garra(vel=VEL_DESCER_GARRA):
     if descida_atual_garra < DESCIDA_MAX_GARRA:
@@ -137,21 +144,29 @@ def media_garra(vel=VEL_DESCER_GARRA):
         LOG("levantando médio")
     if descida_atual_garra < DIST_PLATAFORMA:
         LOG("abaixando médio")
-    garra_na_altura(DIST_PLATAFORMA, vel=vel)
+    garra_na_altura(DESCIDA_PLATAFORMA, vel=vel)
 
 def levanta_garra(vel=VEL_DESCER_GARRA):
     if descida_atual_garra > 0:
         LOG("levantando")
     garra_na_altura(0, vel=vel)
 
+
 def levanta_garra_dist_sensor(vel=VEL_DESCER_GARRA): #! errado tudo nome e oq faz
     ASSERT(False, "levanta_garra_dist_sensor não existe")
 
-def estende_plataforma(vel=240):
+
+def reseta_plataforma(vel=VEL_RETRAIR_PLATAFORMA):
+    global plataforma_estendida
+    plataforma_estendida = False
+    retrai_plataforma(vel=vel)
+
+def estende_plataforma(vel=VEL_RETRAIR_PLATAFORMA):
     globais.motor_plataforma.run_angle(vel, ANG_PLATAFORMA, then=Stop.COAST, wait=True)
 
-def retrai_plataforma(vel=240):
+def retrai_plataforma(vel=VEL_RETRAIR_PLATAFORMA):
     globais.motor_plataforma.run_until_stalled(-vel, then=Stop.COAST, duty_limit=None)
+
 
 def menu_calibração(*sensores, botao_parar=Button.BLUETOOTH,
                                botao_aceitar=Button.CENTER,
