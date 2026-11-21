@@ -548,7 +548,7 @@ def pid(kp, kd=0, ki=0):
 
 pid_linha = pid(kp=0.50)
 def seguir_linha_até(parada=até_dist_max_ou_cruzamento(TAM_PISTA_TODA),
-                     *, vel=None, pid=None, parar_no_verde=False):
+                     *, vel=None, pid=None, parar_no_verde=False, caçamba=False):
     if vel is None: vel = VEL_SEGUIR_LINHA
     if pid is None: pid = pid_linha
 
@@ -565,6 +565,10 @@ def seguir_linha_até(parada=até_dist_max_ou_cruzamento(TAM_PISTA_TODA),
         dir    = sensor_cor_dir.reflection()
 
         erro = dir_linha.mul * (REFL_IDEAL - centro)
+        if caçamba:
+            dir_linha_mul = dir_linha.ESQ
+            erro = dir_linha.mul * (REFL_IDEAL - esq)
+
         rodas.drive(vel, pid(erro))
 
         if parada(rodas.distance(), esq, centro, dir, preto): break
@@ -1001,13 +1005,13 @@ def descobrir_cor_caçambas():
 
     acertar_orientação("O")
     achar_não_verde_alinhado()
-    rodas.straight(DIST_SENSORES_CENTRO)
+    rodas.straight(2*DIST_SENSORES_CENTRO)
     acertar_orientação("S")
 
     #gambiarra ver o 1 com cor incerta
     pid_caçamba = pid(kp=0.5)
-    andar_dist_linha(DIST_ALINHO, vel=20, pid=pid_caçamba)
-    andar_dist_linha(DIST_BORDA_CAÇAMBA - DIST_ALINHO, pid=pid_caçamba)
+    andar_dist_linha(DIST_ALINHO, vel=20, pid=pid_caçamba, caçamba=True)
+    andar_dist_linha(DIST_BORDA_CAÇAMBA - DIST_ALINHO, pid=pid_caçamba, caçamba=True)
 
     for i in range(NUM_CAÇAMBAS):
         cores_caçambas[i] = blt.ver_cor_caçamba()
@@ -1017,12 +1021,12 @@ def descobrir_cor_caçambas():
         LOG(f"descobrir_cor_caçamba: caçamba {cores_caçambas[i]}")
 
         if i+1 < NUM_CAÇAMBAS:
-            andar_dist_linha(TAM_CAÇAMBA+DIST_CAÇAMBA, vel = 80)
+            andar_dist_linha(TAM_CAÇAMBA+DIST_CAÇAMBA, vel = 80, caçamba=True)
     LOG(f"descobrir_cor_caçamba: cores_caçambas = {cores_caçambas}")
     blt.mostrar_caçambas(cores_caçambas)
 
     rodas.turn(10)
-    dar_ré(TAM_BLOCO//4)
+    dar_ré(TAM_BLOCO)
     rodas.turn(-20)
 
 class testes:
