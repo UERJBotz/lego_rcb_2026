@@ -1,6 +1,8 @@
 from comum import globais
 from comum import LOG, ASSERT
 
+from pybricks.tools import wait
+
 from lib.polyfill import Enum
 try: #!
     from cores import Cor
@@ -63,7 +65,7 @@ def enviar_comando(*comando):
 def enviar_resposta(*resposta):
     enviar_mensagem(*resposta, enum=rsp)
 
-def esperar_resposta(esperado, canal=TX_BRACO):
+def esperar_resposta(esperado, canal=TX_BRACO, delay=0):
     resposta = -1
     if not SILENCIOSO: print(f"esperar_resposta: {rsp(esperado)}")
     while resposta != esperado:
@@ -74,6 +76,7 @@ def esperar_resposta(esperado, canal=TX_BRACO):
                 resposta, *args = resposta
         except RuntimeError: continue
         except UnicodeError: continue
+    if delay: wait(delay)
     if len(args) == 1: return args[0]
     return args
 
@@ -88,8 +91,7 @@ def fechar_garra():
 
 def abrir_garra():
     enviar_comando(cmd.abre_garra)
-    r = esperar_resposta(rsp.abri, canal=TX_RABO)
-    wait(200); return r
+    return esperar_resposta(rsp.abri, canal=TX_RABO, delay=200)
 
 def levantar_garra():
     enviar_comando(cmd.levanta_garra)

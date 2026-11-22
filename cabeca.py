@@ -161,9 +161,12 @@ def main():
             achar_não_verde_alinhado()
             rodas.straight(DIST_EIXO_SENSOR)
             cor, pos_estimada = procura(pos_estimada, cores_caçambas)
+            LOG(f"main: tinha cubo {Cor(cor)} na frente de {pos_estimada}")
 
             caminho_volta = achar_caminhos(pos_estimada, (0,0))
+            LOG(f"main: caminho de volta: {caminho_volta}")
             seguir_caminho(caminho_volta)
+            rodas.straight(DIST_EIXO_SENSOR)
 
             colocar_cubo_na_caçamba(cor)
             dar_ré(DIST_VERDE_CAÇAMBA)
@@ -200,7 +203,6 @@ def test():
 
         if True:
             main()
-
 
     while False:
         cor = blt.ver_cor_cubo()
@@ -267,28 +269,30 @@ def test():
         LOG(caca, cubo)
 
     if False:
-        pos_estimada = (0,0)
+        pos_inicial  = (0,0)
+        pos_final    = (3,3)
+
+        pos_estimada = pos_inicial
         orientação_estimada = "L"
 
         achar_não_verde_alinhado()
         rodas.straight(DIST_EIXO_SENSOR)
 
-        if False:
-            cor, pos_estimada = varredura(pos_estimada, cores_caçambas)
-        else:
-            na_grade = True
-            cor, pos_estimada = procura(pos_estimada, cores_caçambas)
-            caminho_volta = achar_caminhos(pos_estimada, (0,0))
-            seguir_caminho(caminho_volta)
-            colocar_cubo_na_caçamba(cor)
-            dar_ré(DIST_VERDE_CAÇAMBA)
-        return
+        na_grade = True
+        caminho_ida = [(0,0), (0,1), (0,2), (1,2)]
+                      #achar_caminhos(pos_inicial, pos_final)
+        LOG(caminho_ida)
+        seguir_caminho(caminho_ida)
+        caminho_volta = list(reversed(caminho_ida))
+                        #achar_caminhos(pos_final, pos_inicial)
+        LOG(caminho_volta)
+        seguir_caminho(caminho_volta)
 
     if False:
         blt.abrir_garra()
         blt.fechar_garra()
         bipes.separador()
-    if True:
+    if False:
         blt.abaixar_garra()
         blt.levantar_garra()
         bipes.separador()
@@ -776,13 +780,16 @@ def seguir_caminho(caminho): #! lidar com outras coisas
             yield rodas.distance()
 
     movs, ori_final = achar_movimentos(caminho, orientação_estimada)
-    LOG(*(tipo_movimento(mov) for mov in movs))
+    if movs:
+        LOG(*(tipo_movimento(mov) for mov in movs))
 
-    for _ in interpretar_caminho(movs):
-        while not rodas.done(): pass
+        for _ in interpretar_caminho(movs):
+            while not rodas.done(): pass
 
-    if na_grade: acertar_orientação_linha(ori_final)
-    else:        acertar_orientação(ori_final)
+        if na_grade: acertar_orientação_linha(ori_final)
+        else:        acertar_orientação(ori_final)
+    else:
+        pass #! falhar mais alto
 
 def acertar_orientação(ori):
     if True:
@@ -858,7 +865,6 @@ def colocar_cubo_na_caçamba(cor_cubo, max_cubos=NUM_CUBOS_PEGÁVEIS):
     virar_direita()
     achar_não_verde_alinhado()
     LOG("alinhar_caçambas: viu não verde (espera vermelho)")
-
 
     dar_ré(DIST_BORDA_CAÇAMBA + DIST_EIXO_SENSOR)
     dar_meia_volta()
@@ -942,6 +948,7 @@ def partial(func, *args, **kwargs):
 
 #! tá empurrando?
 def procura(pos_estimada, cores_caçambas):
+    ## ordena as célular incertas por distância à origem
     cel_incertas = pegar_celulas_incertas()
     cel_atual = pos_estimada
 
@@ -952,9 +959,12 @@ def procura(pos_estimada, cores_caçambas):
         len(caminhos_incertas[x]) if caminhos_incertas[x] is not None else 9000
     ))
 
+    ## garra
     blt.retrair_plataforma()
     blt.mediar_garra()
     blt.abrir_garra()
+
+    ## passa por cada um das células incertas
     for cel_destino in cel_incertas:
         LOG("tentando de", cel_atual, "até :", cel_destino)
 
@@ -963,29 +973,30 @@ def procura(pos_estimada, cores_caçambas):
             LOG("procura: nenhum caminho encontrado")
             continue
 
-        # anda até ficar imediatamente antes da celula destino
+        ## anda até ficar imediatamente antes da celula destino
         caminho.pop(-1)
         seguir_caminho(caminho)
         cel_atual = caminho[-1]
 
-        # acerta orientação para como se tivesse andado tudo
+        ## acerta orientação para como se tivesse andado tudo
         restante = [cel_atual, cel_destino]
         _, ori_final = achar_movimentos(restante, orientação_estimada)
         acertar_orientação_linha(ori_final)
 
-        # vê se tem alguma coisa na frente
-        andar_dist_linha(DIST_CRUZAMENTO_CUBO)
+        ## vê se tem alguma coisa na frente
+        # chega mais perto do cubo
+        andar_dist_linha(0)
 
-        #! fazer igual na varredura (colocar em função)
+        #! fazer igual isso na varredura (colocar em função)
+        #! colocar pra dizer que é a cor do cubo de cima ou de baixo
         cor = blt.ver_cor_cubo()
         if cor == Cor.enum.NENHUMA:
             LOG("procura: cel livre viu cor.NENHUMA*")
             tira_obstaculo(cel_destino)
-            achar_cruzamento_linha(dist_max=TAM_QUARTEIRÃO)
+            achar_cruzamento_linha(dist_max=TAM_CUBO)
             cel_atual = cel_destino
             continue
 
-        # blt.mostrar_cor(cor) #! colocar pra dizer que é a cor do cubo de cima ou de baixo
         def se_deixar_cubo(cor):
             if cor == Cor.enum.BRANCO:
                 ASSERT(cor not in cores_caçambas, "NÃO TEM CAÇAMBA BRANCA!")
@@ -996,17 +1007,17 @@ def procura(pos_estimada, cores_caçambas):
             if cubos_caçambas[cores_caçambas.index(cor)] >= NUM_CUBOS_PEGÁVEIS:
                 LOG(f"procura: cubo caçamba cheia cor {cor}")
                 return True
-
             return False
 
         blt.abaixar_garra()
         blt.fechar_garra()
-        if se_deixar_cubo(cor):
+        if se_deixar_cubo(cor): #! tirar a puxada do cubo
             coloca_obstaculo(cel_destino)
             dar_ré(DIST_VOLTAR_CUBO) #!
             blt.abrir_garra()
             blt.mediar_garra()
             dar_ré(DIST_CRUZAMENTO_CUBO + DIST_EIXO_SENSOR)
+            cel_atual = cel_atual
             continue
         blt.mediar_garra() #! levantar?
 
@@ -1014,7 +1025,7 @@ def procura(pos_estimada, cores_caçambas):
 
         LOG(f"procura: cubo cor {cor}")
         tira_obstaculo(cel_destino)
-        dar_ré(DIST_CRUZAMENTO_CUBO + 2*DIST_EIXO_SENSOR)
+        dar_ré(DIST_CRUZAMENTO_CUBO + DIST_EIXO_SENSOR)
         return cor, cel_atual
 
     imprimir_mapa()

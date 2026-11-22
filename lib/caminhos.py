@@ -278,7 +278,7 @@ def a_estrela(grid, src, dest):
 def caminho_relativo(caminho_absoluto: list[tuple[int, int]]):
     if caminho_absoluto is None:
         caminho_absoluto = []
-        print("Caminho Errado")
+        print("Caminho Errado") #! LOG
 
     #movimentos
     direita = (0, 1); baixo = (1, 0); esquerda = (0, -1); cima = (-1, 0)
