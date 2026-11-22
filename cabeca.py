@@ -42,7 +42,7 @@ DIST_EIXO_SENSOR = 45
 DIST_EIXO_SENSOR_FRENTE = 110
 DIST_EIXO_SENSOR_TRAS = 110
 DIST_CRUZAMENTO_CUBO = TAM_BLOCO - DIST_EIXO_SENSOR_FRENTE
-DIST_VOLTAR_CUBO = TAM_CUBO//2
+DIST_VOLTAR_CUBO = TAM_CUBO
 DIST_SENSORES_CENTRO = 20
 
 DIST_BORDA_CAÇAMBA = 130
@@ -131,7 +131,8 @@ def main():
             dar_ré_alinhar_primeiro_bloco()
             posicionamento_inicial()
 
-        while False:#quarteirão_atual <= MAPA_Y_MAX//2:
+        dir_linha.mul = dir_linha.DIR
+        while False: #quarteirão_atual <= MAPA_Y_MAX//2:
             LOG(f"main: varrendo: quarteirão {quarteirão_atual}")
 
             achar_não_verde_alinhado()
@@ -173,7 +174,7 @@ def test():
 
     blt.SILENCIOSO = True
 
-    if False:
+    if True:
         if False: tira_obstaculo((0,2))
         if False: tira_obstaculo((0,4))
         if False: tira_obstaculo((1,5))
@@ -194,10 +195,10 @@ def test():
 
         if False: orientação_estimada = "N"
         if False: orientação_estimada = "S"
-        if False: orientação_estimada = "L"
+        if True: orientação_estimada = "L"
         if False: orientação_estimada = "O"
 
-        if False:
+        if True:
             main()
 
 
@@ -442,7 +443,7 @@ def dar_ré(dist):
     rodas.straight(-dist)
 
 def dar_ré_alinhar_primeiro_bloco():
-    dar_ré(TAM_BLOCO - DIST_EIXO_SENSOR - TAM_FAIXA//2)
+    dar_ré(TAM_BLOCO - DIST_EIXO_SENSOR - TAM_FAIXA)
     LOG("dar_ré_meio_quarteirão: ré")
 
 def dar_ré_meio_quarteirão():
@@ -589,10 +590,10 @@ def seguir_linha_até(parada=até_dist_max_ou_cruzamento(TAM_PISTA_TODA),
         centro = sensor_cor_centro.reflection()
         dir    = sensor_cor_dir.reflection()
 
-        erro = dir_linha.mul * (REFL_IDEAL - centro)
         if caçamba:
-            dir_linha_mul = dir_linha.ESQ
-            erro = dir_linha.mul * (REFL_IDEAL - esq)
+            erro = dir_linha.DIR * (REFL_IDEAL - esq)
+        else:
+            erro = dir_linha.mul * (REFL_IDEAL - centro)
 
         rodas.drive(vel, pid(erro))
 
@@ -868,13 +869,12 @@ def colocar_cubo_na_caçamba(cor_cubo, max_cubos=NUM_CUBOS_PEGÁVEIS):
 
             rodas.straight(dist - DIST_BORDA_CAÇAMBA - margem
                           + cubos_caçambas[i]*(TAM_CUBO + espaçamento))
-            blt.abaixar_garra()
-            blt.levantar_garra()
             virar_direita()
 
             achar_não_verde_alinhado(max_tentativas=5, virar=False)
 
-            rodas.straight(DIST_VERDE_CAÇAMBA-20)
+            rodas.straight(DIST_VERDE_CAÇAMBA + DIST_EIXO_SENSOR//2)
+            blt.mediar_garra()
             blt.abrir_garra()
 
             cubos_caçambas[i] += 1
