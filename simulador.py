@@ -1,5 +1,5 @@
 import pygame
-from lib.caminhos import *
+from lib.grafo import *
 
 CUBOS = {(1, 5): "AZUL", (4, 6): "VERMELHO", (6, 8): "VERDE"} #adicionar cubos na pista aqui
 FRAMES_POR_CELULA = 8      
@@ -79,6 +79,8 @@ def andar(caminho):
     global pos, passos, angulo, caminho_atual
     caminho_atual = caminho
     for (l0, c0), (l1, c1) in zip(caminho, caminho[1:]):
+        print("Caminho recebido:", caminho)
+        print("Passo atual:", (l0, c0), "->", (l1, c1))
         angulo = DIRECOES[(l1 - l0, c1 - c0)]
         for f in range(1, FRAMES_POR_CELULA + 1):
             k = f / FRAMES_POR_CELULA
