@@ -192,7 +192,6 @@ def main(hub):
 
         if cmd != antes:
             LOG(f"{blt.cmd(comando)}{args}")
-        LOG(f"{blt.cmd(comando)}{args}")
 
         if   comando == blt.cmd.ver_cor_sensor_caçamba:
             blt.enviar_resposta(blt.rsp.cor_sensor_caçamba, cor_caçamba)
