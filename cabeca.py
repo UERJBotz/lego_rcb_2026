@@ -232,7 +232,7 @@ def test():
         blt.fechar_garra()
 
     if True:
-        cubos_no_robo= [Cor.VERDE,Cor.AZUL]
+        cubos_no_robo = [Cor.VERDE,Cor.AZUL]
         blt.mostrar_cubos(cubos_no_robo)
 
     if False: testes.imprimir_cor_cubo_para_sempre()
