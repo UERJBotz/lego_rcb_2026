@@ -19,7 +19,7 @@ DESCIDA_PLATAFORMA = 120#mm
 VEL_DESCER_GARRA   = 800
 
 RAIO_ENGRENAGEM = 9#mm
-DIST_PLATAFORMA = 55#mm
+DIST_PLATAFORMA = 60#mm
 ANG_PLATAFORMA  = DIST_PLATAFORMA*RAIO_ENGRENAGEM
 VEL_RETRAIR_PLATAFORMA = 240
 
@@ -91,6 +91,7 @@ def main():
 
 def test():
     ... # testar coisas aqui sem mudar o resto do código
+
     LOG("retrai_plataforma")
     retrai_plataforma()
     bipes.separador()
