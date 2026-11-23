@@ -42,7 +42,7 @@ DIST_EIXO_SENSOR = 45
 DIST_EIXO_SENSOR_FRENTE = 110
 DIST_EIXO_SENSOR_TRAS = 110
 DIST_CRUZAMENTO_CUBO = TAM_BLOCO - DIST_EIXO_SENSOR_FRENTE
-DIST_VOLTAR_CUBO = TAM_CUBO
+DIST_VOLTAR_CUBO = 0
 DIST_SENSORES_CENTRO = 20
 DIST_ALINHAR_PID_CACAMBA = 60
 
@@ -202,7 +202,6 @@ def test():
         if False: orientação_estimada = "S"
         if True: orientação_estimada = "L"
         if False: orientação_estimada = "O"
-
 
         if True:
             main()
@@ -1016,16 +1015,19 @@ def procura(pos_estimada, cores_caçambas):
                 return True
             return False
 
-        blt.abaixar_garra()
-        blt.fechar_garra()
         if se_deixar_cubo(cor): #! tirar a puxada do cubo
             coloca_obstaculo(cel_destino)
-            dar_ré(DIST_VOLTAR_CUBO) #!
-            blt.abrir_garra()
-            blt.mediar_garra()
+            if DIST_VOLTAR_CUBO:
+                blt.abaixar_garra()
+                blt.fechar_garra()
+                dar_ré(DIST_VOLTAR_CUBO) #!
+                blt.abrir_garra();
+                blt.mediar_garra()
             dar_ré(DIST_CRUZAMENTO_CUBO + DIST_EIXO_SENSOR)
             cel_atual = cel_atual
             continue
+        blt.abaixar_garra()
+        blt.fechar_garra()
         blt.mediar_garra() #! levantar?
         cubos_no_robo[0] = cor #! Mudar a logica do 0 ao pegar dois cubos.
         blt.mostrar_cubos(cubos_no_robo)
