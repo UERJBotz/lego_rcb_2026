@@ -30,11 +30,7 @@ def pode_conectar(mapa, pos, direcao):
 
     if not (0 <= ni < len(mapa) and 0 <= nj < len(mapa[0])): return None
 
-    atual = mapa[i][j]
     vizinha = mapa[ni][nj]
-
-    if atual.estado == estado_celula.OCUPADA:   return None
-    if vizinha.estado == estado_celula.OCUPADA: return None
 
     if direcao in (Noh.NORTE, Noh.SUL):
         if isinstance(vizinha, (Vert, Cruz)): return (ni, nj)
@@ -222,10 +218,13 @@ def a_estrela(grid, grafo, src, dest):
             return tracar_caminho(pai, posicoes, noh_atual, src)
 
         for vizinho in noh_atual.vizinhos:
-            if vizinho in concluidos:
+            if vizinho in concluidos: 
                 continue
 
             pos_vizinho = posicoes[vizinho]
+            
+            if celula_ocupada(grid, pos_vizinho): 
+                continue
 
             if not (celula_livre(grid, pos_vizinho) or eh_destino(pos_vizinho, dest)):
                 continue
@@ -263,5 +262,6 @@ def tracar_caminho(pai, posicoes, atual, src):
     return caminho_sem_repetir
 
 def achar_caminhos(src, dest):
-    grafo = construir_grafo(mapa)
     return a_estrela(mapa, grafo, src, dest)
+
+grafo = construir_grafo(mapa)
