@@ -96,14 +96,14 @@ class SensorCombinado:
         self.sensor_dist = SensorDist(i2c, offset=offset, custom_address=0x30)
         self.sensor_cor  = SensorCor(i2c)
 
-    def cor_se_perto(self, perto=30):
+    def cor_se_perto(self, perto=30, cacamba=False):
         if (dist := self.dist()) >= perto: return Cor.NENHUMA
 
-        if (cor := self.cor()) == Cor.NENHUMA:
+        if (cor := self.cor(cacamba)) == Cor.NENHUMA:
             return Cor.BRANCO #! ver se fazer assim mesmo
         return cor
 
-    def cor(self):  return self.sensor_cor.cor()
+    def cor(self, cacamba=False): return self.sensor_cor.cor(cacamba)
     def dist(self): return self.sensor_dist.ping()
 
 class NoneHub(coringa): #! fazer direito
@@ -169,7 +169,13 @@ def main(hub):
     cor_caçamba = cor_garra = 0
     while True:
         cor_cubo     = sensor_cubo.cor_se_perto()
-        cor_caçamba  = sensor_caçamba.cor_se_perto()
+        hsv_cubo     = sensor_cubo.sensor_cor.hsv()
+        rgbc_cubo    = sensor_cubo.sensor_cor.rgbc()
+    
+        cor_caçamba  = sensor_caçamba.cor_se_perto(cacamba=True)
+        #hsv_cacamba  = sensor_caçamba.sensor_cor.hsv()
+        #rgbc_caçamba = sensor_caçamba.sensor_cor.rgbc()
+
         dist_cubo    = sensor_cubo.dist()
         dist_caçamba = sensor_caçamba.dist()
         dist_inimigo = sensor_inimigo.dist()
@@ -181,8 +187,8 @@ def main(hub):
             timer = millis()
             led.toggle()
 
-            LOG(f"caçamba: {Cor(cor_caçamba)} a {dist_caçamba}mm",
-                  f"garra: {Cor(cor_cubo)} a {dist_cubo}mm",
+            LOG(f"caçamba: {Cor(cor_caçamba)} a {dist_caçamba}mm", 
+                f"garra: {Cor(cor_cubo)} a {dist_cubo}mm, hsv:{hsv_cubo}",
                 f"inimigo: a {dist_inimigo}mm", sep="\t")
 
         antes, cmd = cmd, hub.ble.observe(blt.TX_CABECA)
