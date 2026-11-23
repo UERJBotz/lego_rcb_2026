@@ -44,6 +44,7 @@ DIST_EIXO_SENSOR_TRAS = 110
 DIST_CRUZAMENTO_CUBO = TAM_BLOCO - DIST_EIXO_SENSOR_FRENTE
 DIST_VOLTAR_CUBO = TAM_CUBO
 DIST_SENSORES_CENTRO = 20
+DIST_ALINHAR_PID_CACAMBA = 60
 
 DIST_BORDA_CAÇAMBA = 130
 DIST_CAÇAMBA = 100
@@ -1048,7 +1049,7 @@ def descobrir_cor_caçambas():
 
     acertar_orientação("O")
     achar_não_verde_alinhado()
-    rodas.straight(2*DIST_SENSORES_CENTRO)
+    rodas.straight(DIST_ALINHAR_PID_CACAMBA)
     acertar_orientação("S")
 
     #gambiarra ver o 1 com cor incerta
