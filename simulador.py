@@ -12,6 +12,13 @@ na_garra = None
 angulo = 0                 
 caminho_atual = []
 
+ORIENTACOES = {
+    0: "N",
+    90: "L",
+    180: "S",
+    270: "O"
+}
+
 X_MIN, X_MAX, Y_MIN, Y_MAX = -3.5, 15.5, -1.3, 9.3      
 FINO = 0.14 #espessura das linhas
 BRANCO, PRETO, AZUL = (245, 245, 245), (25, 25, 25), (30, 90, 220)
@@ -96,9 +103,8 @@ def olhar(destino):
 def procura():
     cel_atual = pos
     incertas = pegar_celulas_incertas()
-
     caminhos_incertas = {
-        cel: achar_caminhos(cel_atual, cel)
+        cel: achar_caminhos(cel_atual, cel, ORIENTACOES[angulo])
         for cel in incertas
     }
     incertas.sort(key=lambda cel: (
@@ -107,7 +113,7 @@ def procura():
     ))
 
     for destino in incertas:
-        caminho = achar_caminhos(cel_atual, destino)
+        caminho = achar_caminhos(cel_atual, destino, ORIENTACOES[angulo])
         if not caminho:
             continue
 
@@ -131,7 +137,7 @@ while CUBOS:
     destino = procura()
     if destino is None: break               
     na_garra = CUBOS.pop(destino)              
-    andar(achar_caminhos(pos, (0, 0)))              
+    andar(achar_caminhos(pos, (0, 0), ORIENTACOES[angulo]))              
     entregues.append(na_garra); na_garra = None
 
 print(f"terminou: {passos} passos, entregues: {entregues}")
