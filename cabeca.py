@@ -550,11 +550,26 @@ def até_dist_max_ou_cruzamento(dist_max):
         )
     return func
 
+def até_cruzamento_se_intervalo_dist(dist_min, dist_max):
+    def func(dist, esq, centro, dir, preto):
+        if dist < dist_min: return False
+        return (
+            até_dist_max_ou_cruzamento(dist_max)(dist, esq, centro, dir, preto)
+        )
+    return func
+
 def ou(*funcs):
     def f(*args, **kwargs):
         for func in funcs: #! any
             if func(*args, **kwargs): return True
         return False
+    return f
+
+def e(*funcs):
+    def f(*args, **kwargs):
+        for func in funcs: #! any
+            if not func(*args, **kwargs): return False
+        return True
     return f
 
 def dar_ré_linha(dist, vel=70, **kwargs):
@@ -570,8 +585,9 @@ def dar_ré_achar_cruzamento_linha(*, vel=70, dist_max=TAM_PISTA_TODA, **kwargs)
 def andar_dist_linha(dist, **kwargs):
     return seguir_linha_até(até_dist_max(dist), **kwargs)
 
-def achar_cruzamento_linha(*, dist_max=TAM_PISTA_TODA, **kwargs):
-    seguir_linha_até(até_dist_max_ou_cruzamento(dist_max), **kwargs)
+def achar_cruzamento_linha(*, dist_min=TAM_FAIXA,
+                              dist_max=TAM_PISTA_TODA, **kwargs):
+    seguir_linha_até(até_cruzamento_se_intervalo_dist(dist_min, dist_max), **kwargs)
     bipes.separador()
 
 
