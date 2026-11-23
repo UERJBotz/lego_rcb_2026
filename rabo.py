@@ -192,6 +192,7 @@ def main(hub):
 
         if cmd != antes:
             LOG(f"{blt.cmd(comando)}{args}")
+        LOG(f"{blt.cmd(comando)}{args}")
 
         if   comando == blt.cmd.ver_cor_sensor_caçamba:
             blt.enviar_resposta(blt.rsp.cor_sensor_caçamba, cor_caçamba)
@@ -219,6 +220,15 @@ def main(hub):
                 barra_led_cor(i-2, cor)
                 LOG(f"mostrando caçamba {i} com cor {Cor(cor)}")
             blt.enviar_resposta(blt.rsp.mostrei_caçambas)
+        
+        elif comando == blt.cmd.mostra_cubos:
+            cores = args
+            for i, cor in enumerate(cores):
+                barra_led_cor(-i - 4, cor)
+                barra_led_cor(+i + 4, cor)
+                barra_led.write()
+                LOG(f"mostrando cubo {i} com cor {Cor(cor)}")
+            blt.enviar_resposta(blt.rsp.mostrei_cubos)
 
 
 

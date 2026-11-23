@@ -33,6 +33,7 @@ cmd = Enum("cmd", [
     "media_garra",
     "mostra_caçambas",
     "sacode_plataforma",
+    "mostra_cubos",
 ])
 
 rsp = Enum("rsp", [
@@ -51,7 +52,8 @@ rsp = Enum("rsp", [
     "retrai",
     "mediei_garra",
     "mostrei_caçambas",
-    "sacodi"
+    "sacodi",
+    "mostrei_cubos",
 ])
 
 #! mudar alguns nomes depois
@@ -143,6 +145,10 @@ def retrair_plataforma():
 def mostrar_caçambas(cores):
     enviar_comando(cmd.mostra_caçambas, *[cor.cor for cor in cores])
     return esperar_resposta(rsp.mostrei_caçambas, canal=TX_RABO)
+
+def mostrar_cubos(cubos):
+    enviar_comando(cmd.mostra_cubos, *[cor.cor for cor in cubos])
+    return esperar_resposta(rsp.mostrei_cubos, canal=TX_RABO)    
 
 def sacodir_plataforma(num_sacudidas=3):
     enviar_comando(cmd.sacode_plataforma, num_sacudidas)

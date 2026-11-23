@@ -57,6 +57,7 @@ DISTS_CAÇAMBAS = [ DIST_BORDA_CAÇAMBA +
                    for i in range(NUM_CAÇAMBAS) ]
 cubos_caçambas = [0 for i in range(NUM_CAÇAMBAS)]
 cores_caçambas = []
+cubos_no_robo = [Cor.NENHUMA,Cor.NENHUMA]
 
 
 #! 2024: checar stall: jogar exceção
@@ -177,7 +178,7 @@ def test():
 
     blt.SILENCIOSO = True
 
-    if True:
+    if False:
         if False: tira_obstaculo((0,2))
         if False: tira_obstaculo((0,4))
         if False: tira_obstaculo((1,5))
@@ -200,6 +201,7 @@ def test():
         if False: orientação_estimada = "S"
         if True: orientação_estimada = "L"
         if False: orientação_estimada = "O"
+
 
         if True:
             main()
@@ -228,6 +230,10 @@ def test():
     while False:
         blt.abrir_garra()
         blt.fechar_garra()
+
+    if True:
+        cubos_no_robo= [Cor.VERDE,Cor.AZUL]
+        blt.mostrar_cubos(cubos_no_robo)
 
     if False: testes.imprimir_cor_cubo_para_sempre()
     if False: testes.imprimir_cor_caçamba_para_sempre()
@@ -1020,7 +1026,8 @@ def procura(pos_estimada, cores_caçambas):
             cel_atual = cel_atual
             continue
         blt.mediar_garra() #! levantar?
-
+        cubos_no_robo[0] = cor #! Mudar a logica do 0 ao pegar dois cubos.
+        blt.mostrar_cubos(cubos_no_robo)
         imprimir_mapa()
 
         LOG(f"procura: cubo cor {cor}")
