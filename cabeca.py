@@ -231,7 +231,7 @@ def test():
         blt.abrir_garra()
         blt.fechar_garra()
 
-    if True:
+    if False:
         cubos_no_robo = [Cor.VERDE,Cor.AZUL]
         blt.mostrar_cubos(cubos_no_robo)
 
