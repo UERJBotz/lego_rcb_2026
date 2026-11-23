@@ -219,6 +219,15 @@ def main(hub):
                 barra_led_cor(i-2, cor)
                 LOG(f"mostrando caçamba {i} com cor {Cor(cor)}")
             blt.enviar_resposta(blt.rsp.mostrei_caçambas)
+        
+        elif comando == blt.cmd.mostra_cubos:
+            cores = args
+            for i, cor in enumerate(cores):
+                barra_led_cor(-i - 4, cor)
+                barra_led_cor(+i + 4, cor)
+                barra_led.write()
+                LOG(f"mostrando cubo {i} com cor {Cor(cor)}")
+            blt.enviar_resposta(blt.rsp.mostrei_cubos)
 
 
 
