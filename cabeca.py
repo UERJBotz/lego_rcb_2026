@@ -52,9 +52,12 @@ DIST_ALINHAR_PID_CACAMBA = 60
 DIST_BORDA_CAÇAMBA = 130
 DIST_CAÇAMBA = 100
 DIST_VERDE_CAÇAMBA = 80
-VEL_SEGUIR_LINHA = 100 #mm/s
 TAM_PISTA_TODA = TAM_QUARTEIRÃO*6
 BLOCO_MEIO = 4
+
+REFL_MIN, REFL_MAX = 22, 99
+REFL_IDEAL = (REFL_MAX + REFL_MIN)/2
+VEL_SEGUIR_LINHA = 100 #mm/s
 
 DISTS_CAÇAMBAS = [ DIST_BORDA_CAÇAMBA +
                    TAM_CAÇAMBA*i + DIST_CAÇAMBA*i
@@ -163,8 +166,11 @@ def main():
             pos_estimada = (quarteirão_atual*2, 0)
         else:
             LOG("main: procurando")
-            achar_não_verde_alinhado()
-            rodas.straight(DIST_EIXO_SENSOR)
+            achar_não_verde_alinhado()            
+            rodas.straight(DIST_EIXO_SENSOR)                           
+            dir_linha.mul = achar_direção_linha()
+            rodas.turn(-rodas.angle())
+
             cor, pos_estimada = procura(pos_estimada, cores_caçambas)
             LOG(f"main: tinha cubo {Cor(cor)} na frente de {pos_estimada}")
 
@@ -185,7 +191,7 @@ def test():
         global BOTÕES_DESLIGA
         BOTÕES_DESLIGA = {Button.CENTER}
 
-    if False:
+    if True:
         if False: tira_obstaculo((0,2))
         if False: tira_obstaculo((0,4))
         if False: tira_obstaculo((1,5))
@@ -574,6 +580,27 @@ def achar_cruzamento_linha(*, dist_max=TAM_PISTA_TODA, **kwargs):
     seguir_linha_até(até_dist_max_ou_cruzamento(dist_max), **kwargs)
     bipes.separador()
 
+def achar_direção_linha(margem=0.1, giro_max=45):
+    raio_refl = REFL_IDEAL - REFL_MIN
+    margem_refl = raio_refl*margem
+    with mudar_velocidade(80, 30):
+        rodas.reset()
+        rodas.turn(giro_max, wait=False)
+        while not rodas.done():
+            centro = sensor_cor_centro.reflection()
+            if abs(centro - REFL_IDEAL) <= margem_refl:
+                rodas.stop()
+                LOG("Achei a linha e estou seguindo a esquerda dela.", centro)
+                return dir_linha.ESQ
+        rodas.turn(-2*giro_max, wait=False)
+        while not rodas.done():
+            centro = sensor_cor_centro.reflection()
+            if abs(centro - REFL_IDEAL) <= margem_refl:
+                rodas.stop()
+                LOG("Achei a linha e estou seguindo a direita dela.", centro)
+                return dir_linha.DIR
+        LOG("Não achei a linha.")                    
+        return dir_linha.mul
 
 def pid(kp, kd=0, ki=0):
     ierro = erro_ant = 0
@@ -593,10 +620,6 @@ def seguir_linha_até(parada=até_dist_max_ou_cruzamento(TAM_PISTA_TODA),
                      *, vel=None, pid=None, parar_no_verde=False, caçamba=False):
     if vel is None: vel = VEL_SEGUIR_LINHA
     if pid is None: pid = pid_linha
-
-    if False: REFL_MIN, REFL_MAX = 13, 99
-    else:     REFL_MIN, REFL_MAX = 22, 99
-    REFL_IDEAL = (REFL_MAX + REFL_MIN)/2
 
     def preto(val): return val <= REFL_MIN + 5
 
@@ -1037,6 +1060,7 @@ def procura(pos_estimada, cores_caçambas):
         blt.mediar_garra() #! levantar?
         cubos_no_robo[0] = cor #! Mudar a logica do 0 ao pegar dois cubos.
         blt.mostrar_cubos(cubos_no_robo)
+        LOG(f"Mostrando cubos")
         imprimir_mapa()
 
         LOG(f"procura: cubo cor {cor}")
