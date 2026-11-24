@@ -8,10 +8,10 @@ from pybricks.robotics   import DriveBase
 
 from lib.caminhos import achar_movimentos, tipo_movimento
 from lib.caminhos import coloca_obstaculo, tira_obstaculo
-from lib.caminhos import pegar_celulas_incertas, imprimir_mapa
+from lib.caminhos import imprimir_mapa
 from lib.caminhos import MAPA_X_MAX, MAPA_Y_MAX
 
-from lib.grafo import achar_caminhos
+from lib.grafo import achar_caminhos, pegar_celulas_incertas_alcancaveis
 
 from urandom import choice
 
@@ -1282,10 +1282,10 @@ def partial(func, *args, **kwargs):
 
 #! tá empurrando?
 def procura(pos_estimada, cores_caçambas):
-    ## ordena as células incertas por distância à origem
-    cel_incertas = pegar_celulas_incertas()
+    ## ordena as célular incertas por distância à origem
+    cel_incertas = pegar_celulas_incertas_alcancaveis(pos_estimada)
     cel_atual = pos_estimada
-    
+
     ## garra
     blt.retrair_plataforma()
     blt.mediar_garra()
@@ -1298,7 +1298,7 @@ def procura(pos_estimada, cores_caçambas):
         cel_incertas.sort(key=lambda x: (
             len(caminhos_incertas[x]) if caminhos_incertas[x] is not None else 9000
         ))
-        
+
         cel_destino = cel_incertas.pop(0)
         caminho = caminhos_incertas[cel_destino]
         if not caminho:

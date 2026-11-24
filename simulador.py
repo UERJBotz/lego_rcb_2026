@@ -135,7 +135,7 @@ def olhar(destino):
 
 def procura():
     cel_atual = pos
-    incertas = pegar_celulas_incertas()
+    incertas = pegar_celulas_incertas_alcancaveis(pos)
 
     while incertas:
         caminhos = {
