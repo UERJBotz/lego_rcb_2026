@@ -15,9 +15,10 @@ class Noh:
     }
 
 class No:
-    def __init__(self, celula, direcao):
+    def __init__(self, celula, direcao, posicao):
         self.celula = celula
-        self.direcao= direcao
+        self.direcao = direcao
+        self.posicao = posicao
         self.vizinhos = []
         # Cruz -> 4 nós
         # Vert -> 2
@@ -44,13 +45,12 @@ class FronteiraPrioridade():
         return len(self.frontier) == 0
 
 class FronteiraAestrela(FronteiraPrioridade):
-    def __init__(self, dest, posicoes):
+    def __init__(self, dest):
         super().__init__()
-        self.posicoes = posicoes
         self.dest = dest
 
     def add(self, noh, custo):
-        peso = custo + heuristica(self.posicoes[noh], self.dest)
+        peso = custo + heuristica(noh.posicao, self.dest)
         super().add(noh, peso)
 
 class FronteiraFila(FronteiraPrioridade):
@@ -153,8 +153,8 @@ def construir_nohs(mapa):
             elif isinstance(celula, Hori): direcoes = [Noh.LESTE, Noh.OESTE]
 
             for direcao in direcoes:
-                if (i, j) == (0, 0) and direcao == Noh.NORTE: nohs[direcao] = No(celula, direcao)
-                elif  pode_conectar(mapa, (i, j), direcao):   nohs[direcao] = No(celula, direcao)
+                if (i, j) == (0, 0) and direcao == Noh.NORTE: nohs[direcao] = No(celula, direcao, (i, j))
+                elif  pode_conectar(mapa, (i, j), direcao):   nohs[direcao] = No(celula, direcao, (i, j))
 
             if isinstance(celula, Cruz):
                 for noh in nohs.values():
@@ -217,98 +217,16 @@ def custo_virada(ori_atual, ori_final):
     #perpendicular
     return 1
 
-def custo_transicao(atual, vizinho, posicoes):
-    if posicoes[atual] != posicoes[vizinho]: return 1
+def custo_transicao(atual, vizinho):
+    if atual.posicao != vizinho.posicao:
+        return 1
 
     orientacao_atual = oposta[atual.direcao]
     orientacao_final = vizinho.direcao
 
     return custo_virada(orientacao_atual, orientacao_final)
 
-#def a_estrela(grid, grafo, src, dest):
-#    ok = True
-#
-#    if not dentro_dos_limites(grid, src):
-#        ok = False; print(f"a_estrela: origem inválida {src}")
-#    if not dentro_dos_limites(grid, dest):
-#        ok = False; print(f"a_estrela: destino inválido {dest}")
-#    if not celula_livre(grid, src):
-#        ok = False; print(f"a_estrela: origem bloqueada {src}")
-#    if celula_ocupada(grid, dest):
-#        ok = False; print(f"a_estrela: destino bloqueado {dest}")
-#
-#    if not ok:
-#        return None
-#
-#    # Check if we are already at the destination
-#    if eh_destino(src, dest):
-#        print(f"a_estrela: já no destino {src, dest}")
-#        return []
-#
-#    posicoes = {}
-#
-#    for i in range(len(grafo)):
-#        for j in range(len(grafo[0])):
-#            for noh in grafo[i][j].values():
-#                posicoes[noh] = (i, j)
-#
-#    nohs_iniciais = list(grafo[src[0]][src[1]].values())
-#    nohs_destino = set(grafo[dest[0]][dest[1]].values()) 
-#    if not nohs_iniciais or not nohs_destino:
-#        print("a_estrela: origem ou destino sem nós disponíveis")
-#        return None
-# 
-#    fronteira = []
-#    contador = 0
-# 
-#    pai = {}
-#    passos_dados = {}
-# 
-#    for noh in nohs_iniciais:
-#        heappush(fronteira, (heuristica(src, dest), contador, noh))
-#        contador += 1
-#        passos_dados[noh] = 0
-#     
-#    concluidos = set()
-#
-#    while fronteira:
-#        _, _, noh_atual = heappop(fronteira)
-#
-#        if noh_atual in concluidos:
-#            continue
-#
-#        concluidos.add(noh_atual)
-#
-#        if noh_atual in nohs_destino:
-#            return tracar_caminho(pai, posicoes, noh_atual, src)
-#
-#        for vizinho in noh_atual.vizinhos:
-#            if vizinho in concluidos: 
-#                continue
-#
-#            pos_vizinho = posicoes[vizinho]
-#            
-#            if celula_ocupada(grid, pos_vizinho): 
-#                continue
-#
-#            if not (celula_livre(grid, pos_vizinho) or eh_destino(pos_vizinho, dest)):
-#                continue
-#
-#            novo_passos = passos_dados[noh_atual] + 1
-#
-#            if novo_passos < passos_dados.get(vizinho, float("inf")):
-#                passos_dados[vizinho] = novo_passos
-#                pai[vizinho] = noh_atual
-#
-#                custo_total = novo_passos + heuristica(pos_vizinho, dest)
-#
-#                heappush(fronteira, (custo_total, contador, vizinho))
-#                contador += 1
-#
-#    print("a_estrela: não achou")
-#    return None
-
-def escolher_caminho(grid, grafo, src, dest, orientacao, estrategia='a_estrela'):
+def escolher_caminho(grid, grafo, src, dest, orientacao, estrategia='dijkstra'):
     ok = True
 
     if not dentro_dos_limites(grid, src):
@@ -328,13 +246,6 @@ def escolher_caminho(grid, grafo, src, dest, orientacao, estrategia='a_estrela')
         print(f"{estrategia}: já no destino {src, dest}")
         return []
 
-    posicoes = {}
-
-    for i in range(len(grafo)):
-        for j in range(len(grafo[0])):
-            for noh in grafo[i][j].values():
-                posicoes[noh] = (i, j)
-
     nohs_iniciais = set(grafo[src[0]][src[1]].values())
     nohs_destino  = set(grafo[dest[0]][dest[1]].values()) 
     
@@ -345,7 +256,7 @@ def escolher_caminho(grid, grafo, src, dest, orientacao, estrategia='a_estrela')
     if   estrategia == 'bfs'  : fronteira = FronteiraFila()
     elif estrategia == 'dijkstra': fronteira = FronteiraPrioridade() 
     elif estrategia == 'dfs': fronteira = FronteiraPilha()
-    else: fronteira = FronteiraAestrela(dest, posicoes)
+    else: fronteira = FronteiraAestrela(dest)
     
     pai = {}
     passos_dados = {}
@@ -363,18 +274,18 @@ def escolher_caminho(grid, grafo, src, dest, orientacao, estrategia='a_estrela')
 
         concluidos.add(noh_atual)
 
-        if noh_atual in nohs_destino: return tracar_caminho(pai, posicoes, noh_atual, src)
+        if noh_atual in nohs_destino: return tracar_caminho(pai, noh_atual, src)
 
         for vizinho in noh_atual.vizinhos:
             if vizinho in concluidos:
                 continue
 
-            pos_vizinho = posicoes[vizinho]
+            pos_vizinho = pos_vizinho = vizinho.posicao
 
             if celula_ocupada(grid, pos_vizinho): continue
             if not (celula_livre(grid, pos_vizinho) or eh_destino(pos_vizinho, dest)): continue
 
-            novo_custo = passos_dados[noh_atual] + custo_transicao(noh_atual, vizinho, posicoes)
+            novo_custo = passos_dados[noh_atual] + custo_transicao(noh_atual, vizinho)
 
             if novo_custo < passos_dados.get(vizinho, float('inf')):
                 passos_dados[vizinho] = novo_custo
@@ -383,11 +294,11 @@ def escolher_caminho(grid, grafo, src, dest, orientacao, estrategia='a_estrela')
 
     return None
    
-def tracar_caminho(pai, posicoes, atual, src):
+def tracar_caminho(pai, atual, src):
     caminho = []
 
     while atual in pai:
-        caminho.append(posicoes[atual])
+        caminho.append(atual.posicao)
         atual = pai[atual]
 
     caminho.append(src)
@@ -405,3 +316,4 @@ def achar_caminhos(src, dest, orientacao):
     return escolher_caminho(mapa, grafo, src, dest, orientacao)
 
 grafo = construir_grafo(mapa)
+
