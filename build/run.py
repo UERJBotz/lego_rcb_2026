@@ -2,7 +2,7 @@ import asyncio
 import sys
 
 from pybricksdev.ble import find_device
-from pybricksdev.connections.pybricks import PybricksHub
+from pybricksdev.connections.pybricks import PybricksHubBLE
 
 # https://github.com/orgs/pybricks/discussions/1159
 async def main(nome=None, arquivo=None, wait="True", *args):
@@ -14,8 +14,8 @@ async def main(nome=None, arquivo=None, wait="True", *args):
         print("Verifique que o spike está ligado e tente novamente...")
         return
 
-    hub = PybricksHub()
-    await hub.connect(dev)
+    hub = PybricksHubBLE(dev)
+    await hub.connect()
     await hub.run(arquivo, wait=eval(wait), print_output=True)
     await hub.disconnect()
 
