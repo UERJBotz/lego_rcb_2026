@@ -212,6 +212,7 @@ def test():
         if False: orientação_estimada = "O"
 
         atravessa_rua_pegando_cubo_ou_nao(((0,0), (0,1)))
+<<<<<<< HEAD
         atravessa_rua_pegando_cubo_ou_nao(((0,1), (0,2)))
 
         curva_linha_direita()
@@ -220,6 +221,18 @@ def test():
 
         curva_linha_esquerda()
 
+=======
+        wait(2000)
+        atravessa_rua_pegando_cubo_ou_nao(((0,1), (0,2)))
+        wait(5000)
+        LOG("indo fazer a curva direita")
+        curva_linha_direita()
+        wait(2000)
+        atravessa_rua_pegando_cubo_ou_nao(((0,2), (1,2)))
+        wait(2000)
+        curva_linha_esquerda()
+        wait(2000)
+>>>>>>> 5134300 (muito WIP: explorador de aresta)
         atravessa_rua_pegando_cubo_ou_nao(((1,2), (2,2)))
 
         curva_linha_esquerda()
@@ -715,20 +728,34 @@ def girar_orientação(passos):
     orientação_estimada = cardinais[(i + passos) % 4]
 
 def curva_linha_esquerda():
+    alinha_eixo_cruzamento()
+    rodas.turn(-90)
     dir_linha.mul = dir_linha.DIR
+<<<<<<< HEAD
     alinha_eixo_cruzamento()
     rodas.turn(-90)
     #dar_ré(DIST_EIXO_SENSOR)
     #alinha_eixo_cruzamento()
+=======
+    dar_ré(DIST_EIXO_SENSOR)
+    alinha_eixo_cruzamento()
+>>>>>>> 5134300 (muito WIP: explorador de aresta)
     girar_orientação(-1)
     LOG(f"curva_linha_esquerda: {orientação_estimada=}")
 
 def curva_linha_direita():
+    alinha_eixo_cruzamento()
+    rodas.turn(+90)
     dir_linha.mul = dir_linha.ESQ
+<<<<<<< HEAD
     alinha_eixo_cruzamento()
     rodas.turn(+90)
     #dar_ré(DIST_EIXO_SENSOR)
     #alinha_eixo_cruzamento()
+=======
+    dar_ré(DIST_EIXO_SENSOR)
+    alinha_eixo_cruzamento()
+>>>>>>> 5134300 (muito WIP: explorador de aresta)
     girar_orientação(+1)
     LOG(f"curva_linha_direita: {orientação_estimada=}")
 
@@ -861,7 +888,7 @@ def seguir_caminho(caminho): #! lidar com outras coisas
     def interpretar_movimento_cidade(mov, cnt):
         if  mov == tipo_movimento.FRENTE:
             for _ in range(cnt//2):
-                achar_cruzamento_linha(dist_max=2*TAM_BLOCO)
+                achar_cruzamento_linha(dist_max=2*TAM_BLOCO)                
                 achar_não_cruzamento(dist_max=TAM_FAIXA)
                 cnt -= 2
             if (cnt % 2) != 0:
@@ -902,7 +929,7 @@ def seguir_caminho(caminho): #! lidar com outras coisas
 
         for mov, cnt in movs: #! yield orientação nova?
             LOG(f"seguir_caminho: {cnt} {tipo_movimento(mov)}s")
-            wait(2000) #! só pra testar !!!!!!!!!!!!!!!!!!!!!!!
+            #wait(2000) #! só pra testar !!!!!!!!!!!!!!!!!!!!!!!
             interpretar_movimento(mov, cnt)
             yield rodas.distance()
 
@@ -1126,9 +1153,15 @@ def verificar_aresta(dist_cubo_perto=TAM_BLOCO, dist_max=TAM_QUARTEIRÃO, dist_m
         return True, Cor.NENHUMA
 
 def alinha_eixo_cruzamento():
+<<<<<<< HEAD
     dist_ini = rodas.distance()
     achar_não_cruzamento()
     tam_faixa = rodas.distance() - dist_ini 
+=======
+    rodas.reset()
+    achar_não_cruzamento()
+    tam_faixa = rodas.distance()
+>>>>>>> 5134300 (muito WIP: explorador de aresta)
     LOG(f"alinha_eixo_cruzamento: tamanho faixa lido {tam_faixa} vs {TAM_FAIXA} esperado")
     if tam_faixa:
         seguir_linha_até(até_dist_max(DIST_EIXO_SENSOR - tam_faixa))
