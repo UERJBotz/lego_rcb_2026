@@ -1,4 +1,5 @@
 from lib.caminhos import *
+
 # construindo grafo
 
 class Noh:
@@ -316,4 +317,33 @@ def achar_caminhos(src, dest, orientacao):
     return escolher_caminho(mapa, grafo, src, dest, orientacao)
 
 grafo = construir_grafo(mapa)
+
+def celulas_alcancaveis(src):
+    fronteira = FronteiraFila()
+    visitados = set()
+    alcancaveis = {src}
+
+    for noh in grafo[src[0]][src[1]].values(): fronteira.add(noh, 0)
+
+    while not fronteira.empty():
+        atual = fronteira.remove()
+
+        if atual in visitados: continue
+
+        visitados.add(atual)
+        alcancaveis.add(atual.posicao)
+
+        for vizinho in atual.vizinhos:
+            if vizinho not in visitados: fronteira.add(vizinho, 0)
+
+    return alcancaveis
+
+def pegar_celulas_incertas_alcancaveis(src):
+    cel_incertas = pegar_celulas_incertas()
+
+    alcancaveis = celulas_alcancaveis(src)
+
+    cel_incertas = [cel for cel in cel_incertas
+                    if cel in alcancaveis]
+    return cel_incertas
 
