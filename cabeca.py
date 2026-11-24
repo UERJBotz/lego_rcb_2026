@@ -579,6 +579,22 @@ def dar_ré_achar_cruzamento_linha(*, dist_max=TAM_PISTA_TODA, **kwargs):
 def andar_dist_linha(dist, **kwargs):
     seguir_linha_até(até_dist_max(dist), **kwargs)
 
+def até_não_cruzamento(dist,esq,centro,dir, preto):
+    return not (preto(esq) and preto(dir))
+
+def até_dist_max_ou_não_cruzamento(dist_max):
+    def func(dist, esq, centro, dir, preto):
+        return (
+            até_não_cruzamento(dist, esq, centro, dir,
+                preto=(lambda luz: (luz < REFL_IDEAL)) #! hardcode
+            ) or até_dist_max(dist_max)(dist, esq, centro, dir, preto)
+        )
+    return func
+
+def achar_não_cruzamento_linha(*, dist_max=TAM_PISTA_TODA, **kwargs):
+    seguir_linha_até(até_dist_max_ou_não_cruzamento(dist_max), **kwargs)
+    bipes.separador()
+
 def achar_cruzamento_linha(*, dist_max=TAM_PISTA_TODA, **kwargs):
     seguir_linha_até(até_dist_max_ou_cruzamento(dist_max), **kwargs)
     bipes.separador()
@@ -794,6 +810,7 @@ def seguir_caminho(caminho): #! lidar com outras coisas
         #! fazer run length encoding aqui
         if   mov == tipo_movimento.FRENTE:
             achar_cruzamento_linha(dist_max=TAM_BLOCO + 2*DIST_EIXO_SENSOR)
+            achar_não_cruzamento_linha(dist_max=TAM_FAIXA)
         elif mov == tipo_movimento.TRAS:
             dar_meia_volta_linha()
             achar_cruzamento_linha(dist_max=TAM_BLOCO + 2*DIST_EIXO_SENSOR)
