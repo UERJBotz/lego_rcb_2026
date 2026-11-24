@@ -181,6 +181,9 @@ def test():
     ... # testar coisas aqui sem mudar o resto do código
 
     blt.SILENCIOSO = True
+    if False:
+        global BOTÕES_DESLIGA
+        BOTÕES_DESLIGA = {Button.CENTER}
 
     if False:
         if False: tira_obstaculo((0,2))
