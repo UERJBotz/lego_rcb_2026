@@ -6,10 +6,12 @@ from pybricks.parameters import Port, Stop, Side, Axis, Direction, Button, Color
 from pybricks.tools      import wait, StopWatch
 from pybricks.robotics   import DriveBase
 
-from lib.caminhos import achar_movimentos, achar_caminhos, tipo_movimento
+from lib.caminhos import achar_movimentos, tipo_movimento
 from lib.caminhos import coloca_obstaculo, tira_obstaculo
 from lib.caminhos import pegar_celulas_incertas, imprimir_mapa
 from lib.caminhos import MAPA_X_MAX, MAPA_Y_MAX
+
+from lib.grafo import achar_caminhos
 
 from urandom import choice
 
@@ -174,7 +176,7 @@ def main():
             cor, pos_estimada = procura(pos_estimada, cores_caçambas)
             LOG(f"main: tinha cubo {Cor(cor)} na frente de {pos_estimada}")
 
-            caminho_volta = achar_caminhos(pos_estimada, (0,0))
+            caminho_volta = achar_caminhos(pos_estimada, (0,0), orientação_estimada)
             LOG(f"main: caminho de volta: {caminho_volta}")
             seguir_caminho(caminho_volta)
             rodas.straight(DIST_EIXO_SENSOR)
@@ -187,6 +189,7 @@ def test():
     ... # testar coisas aqui sem mudar o resto do código
 
     blt.SILENCIOSO = True
+
     if False:
         global BOTÕES_DESLIGA
         BOTÕES_DESLIGA = {Button.CENTER}
@@ -988,7 +991,7 @@ def procura(pos_estimada, cores_caçambas):
     cel_atual = pos_estimada
 
     caminhos_incertas = {
-        cel: achar_caminhos(cel_atual, cel) for cel in cel_incertas
+        cel: achar_caminhos(cel_atual, cel, orientação_estimada) for cel in cel_incertas
     }
     cel_incertas.sort(key=lambda x: (
         len(caminhos_incertas[x]) if caminhos_incertas[x] is not None else 9000
@@ -1003,7 +1006,7 @@ def procura(pos_estimada, cores_caçambas):
     for cel_destino in cel_incertas:
         LOG("tentando de", cel_atual, "até :", cel_destino)
 
-        caminho = achar_caminhos(cel_atual, cel_destino)
+        caminho = achar_caminhos(cel_atual, cel_destino, orientação_estimada)
         if not caminho:
             LOG("procura: nenhum caminho encontrado")
             continue
