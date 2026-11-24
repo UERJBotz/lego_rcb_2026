@@ -170,6 +170,7 @@ def main():
             rodas.straight(DIST_EIXO_SENSOR)
             dir_linha.mul = achar_direção_linha()
             rodas.turn(-rodas.angle())
+            rodas.straight(-(DIST_EIXO_SENSOR - TAM_FAIXA))
 
             cor, pos_estimada = procura(pos_estimada, cores_caçambas)
             LOG(f"main: tinha cubo {Cor(cor)} na frente de {pos_estimada}")
@@ -187,9 +188,13 @@ def test():
     ... # testar coisas aqui sem mudar o resto do código
 
     blt.SILENCIOSO = True
-    if False:
+    if True:
         global BOTÕES_DESLIGA
         BOTÕES_DESLIGA = {Button.CENTER}
+    
+    if False:
+        for _ in range(5):
+            achar_cruzamento_linha(dist_max=TAM_BLOCO)
 
     if True:
         if False: tira_obstaculo((0,2))
@@ -212,7 +217,7 @@ def test():
 
         if False: orientação_estimada = "N"
         if False: orientação_estimada = "S"
-        if True: orientação_estimada = "L"
+        if False: orientação_estimada = "L"
         if False: orientação_estimada = "O"
 
         if True:
@@ -423,8 +428,12 @@ def dar_meia_volta():
 def dar_meia_volta_linha():
     global orientação_estimada
 
-    if   dir_linha.mul == dir_linha.ESQ: rodas.curve(TAM_FAIXA//2, +180)
-    elif dir_linha.mul == dir_linha.DIR: rodas.curve(TAM_FAIXA//2, -180)
+    if   dir_linha.mul == dir_linha.ESQ: 
+        andar_dist_linha(DIST_EIXO_SENSOR)
+        rodas.curve(TAM_FAIXA//2, +180)
+    elif dir_linha.mul == dir_linha.DIR:
+        andar_dist_linha(DIST_EIXO_SENSOR)
+        rodas.curve(TAM_FAIXA//2, -180)
 
     orientação_estimada = inverte_orientação()
     LOG(f"dar_meia_volta_linha: {orientação_estimada=}")
@@ -551,6 +560,17 @@ def achar_não_verde_alinhado(*args, **kwargs):
     dar_ré(TAM_FAIXA) #!//2?
     return alinhar(*args, **kwargs)
 
+def até_não_cruzamento(dist,esq,centro,dir, preto):
+    return not (preto(esq) and preto(dir))
+
+def até_dist_max_ou_não_cruzamento(dist_max):
+    def func(dist, esq, centro, dir, preto):
+        return (
+            até_não_cruzamento(dist, esq, centro, dir, preto) or
+            até_dist_max(dist_max)(dist, esq, centro, dir, preto)
+        )
+    return func
+
 def até_cruzamento(dist, esq, centro, dir, preto):
     return preto(esq) and preto(dir)
 
@@ -576,7 +596,8 @@ def dar_ré_achar_cruzamento_linha(*, dist_max=TAM_PISTA_TODA, **kwargs):
 def andar_dist_linha(dist, **kwargs):
     seguir_linha_até(até_dist_max(dist), **kwargs)
 
-def achar_cruzamento_linha(*, dist_max=TAM_PISTA_TODA, **kwargs):
+def achar_cruzamento_linha(*, dist_max=TAM_PISTA_TODA, fator_distancia_linha=1, **kwargs):
+    dist_max = dist_max * fator_distancia_linha
     seguir_linha_até(até_dist_max_ou_cruzamento(dist_max), **kwargs)
     bipes.separador()
 
@@ -653,12 +674,14 @@ def girar_orientação(passos):
 
 def curva_linha_esquerda():
     dir_linha.mul = dir_linha.DIR
-    rodas.curve(DIST_EIXO_SENSOR, -90)
+    andar_dist_linha(DIST_EIXO_SENSOR - TAM_FAIXA)
+    rodas.turn(-90)
     girar_orientação(-1)
 
 def curva_linha_direita():
     dir_linha.mul = dir_linha.ESQ
-    rodas.curve(DIST_EIXO_SENSOR, +90)
+    andar_dist_linha(DIST_EIXO_SENSOR - TAM_FAIXA)
+    rodas.turn(+90)
     girar_orientação(+1)
 
 
@@ -790,16 +813,17 @@ def seguir_caminho(caminho): #! lidar com outras coisas
     def interpretar_movimento_cidade(mov):
         #! fazer run length encoding aqui
         if   mov == tipo_movimento.FRENTE:
-            achar_cruzamento_linha(dist_max=TAM_BLOCO + 2*DIST_EIXO_SENSOR)
+            achar_cruzamento_linha(dist_max=TAM_BLOCO)
+            seguir_linha_até(até_dist_max_ou_não_cruzamento(TAM_FAIXA))
         elif mov == tipo_movimento.TRAS:
             dar_meia_volta_linha()
-            achar_cruzamento_linha(dist_max=TAM_BLOCO + 2*DIST_EIXO_SENSOR)
+            achar_cruzamento_linha(dist_max=DIST_CRUZAMENTO_CUBO)
         elif mov == tipo_movimento.ESQUERDA_FRENTE:
             curva_linha_esquerda()
-            achar_cruzamento_linha(dist_max=TAM_BLOCO + 2*DIST_EIXO_SENSOR)
+            achar_cruzamento_linha(dist_max=TAM_BLOCO)
         elif mov == tipo_movimento.DIREITA_FRENTE:
             curva_linha_direita()
-            achar_cruzamento_linha(dist_max=TAM_BLOCO + 2*DIST_EIXO_SENSOR)
+            achar_cruzamento_linha(dist_max=TAM_BLOCO)
         elif mov == tipo_movimento.ESQUERDA:
             curva_linha_esquerda()
         elif mov == tipo_movimento.DIREITA:
