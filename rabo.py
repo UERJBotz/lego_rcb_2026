@@ -3,7 +3,7 @@ import blt
 from time import ticks_ms as millis, sleep_ms as delay
 from machine import I2C, SoftI2C, Pin, PWM
 from bleradio import BLERadio
-from tcs3472 import TCS34725
+from tcs3472 import TCS34725, intervalo_hsv
 from vl53l0x import VL53L0X
 from neopixel import NeoPixel
 
@@ -24,6 +24,22 @@ Cor = Enum("Cor", ["NENHUMA",
                    "VERMELHO",
                    "BRANCO",
                    "MARROM"])
+
+
+mapa_cubo = {
+     Cor.BRANCO:   intervalo_hsv(h=( 50,  91),           v=(90,96)),
+     Cor.PRETO:    intervalo_hsv(h=( 30, 150), s=(110,), v=(110,)),
+     Cor.MARROM:   intervalo_hsv(h=( 20,  50), s=(130,)),
+     Cor.VERMELHO: intervalo_hsv(h=(330,  10)),
+     Cor.AMARELO:  intervalo_hsv(h=( 20,  60)),
+     Cor.VERDE:    intervalo_hsv(h=( 60, 150)),
+     Cor.AZUL:     intervalo_hsv(h=(180, 260)),
+}
+mapa_caçamba = mapa_cubo.copy()
+mapa_caçamba.update({
+    Cor.BRANCO:   intervalo_hsv(h=(-1,), s=(0,), v=(0,)),
+    Cor.PRETO:    intervalo_hsv(h=(75,),        v=(120,)),
+})
 
 def clamp(x, m,M):
     return min(max(x, m), M)
@@ -91,19 +107,19 @@ class SensorDist(VL53L0X):
     def dist(self): return self.ping()
 
 class SensorCombinado:
-    def __init__(self, i2c, offset=0):
+    def __init__(self, i2c, offset=0, mapa_cores=mapa_cubo):
         self.i2c = i2c
         self.sensor_dist = SensorDist(i2c, offset=offset, custom_address=0x30)
-        self.sensor_cor  = SensorCor(i2c)
+        self.sensor_cor  = SensorCor(i2c, mapa_cores)
 
-    def cor_se_perto(self, perto=30, cacamba=False):
+    def cor_se_perto(self, perto=30):
         if (dist := self.dist()) >= perto: return Cor.NENHUMA
 
-        if (cor := self.cor(cacamba)) == Cor.NENHUMA:
+        if (cor := self.cor()) == Cor.NENHUMA:
             return Cor.BRANCO #! ver se fazer assim mesmo
         return cor
 
-    def cor(self, cacamba=False): return self.sensor_cor.cor(cacamba)
+    def cor(self): return self.sensor_cor.cor()
     def dist(self): return self.sensor_dist.ping()
 
 class NoneHub(coringa): #! fazer direito
@@ -145,7 +161,7 @@ def setup():
                 f"cubo{i2c_cubo.scan()}", end=" ")
 
     sensor_cubo    = SensorCombinado(i2c_cubo,    offset=-100)#! investigar pq offset
-    sensor_caçamba = SensorCombinado(i2c_caçamba, offset=-50) #! investigar pq offset
+    sensor_caçamba = SensorCombinado(i2c_caçamba, offset=-50, mapa_cores=mapa_caçamba) #! investigar pq offset
     sensor_inimigo = SensorDist(i2c_inimigo,      offset=-70) #! investigar pq offset
 
     LOG(f"-> i2c: caçamba{i2c_caçamba.scan()},",
@@ -172,7 +188,7 @@ def main(hub):
         hsv_cubo     = sensor_cubo.sensor_cor.hsv()
         rgbc_cubo    = sensor_cubo.sensor_cor.rgbc()
     
-        cor_caçamba  = sensor_caçamba.cor_se_perto(cacamba=True)
+        cor_caçamba  = sensor_caçamba.cor_se_perto()
         #hsv_cacamba  = sensor_caçamba.sensor_cor.hsv()
         #rgbc_caçamba = sensor_caçamba.sensor_cor.rgbc()
 

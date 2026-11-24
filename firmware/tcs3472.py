@@ -15,8 +15,9 @@ class TCS34725:
     CONTROL     = 0x0F
     CDATAL      = 0x14
 
-    def __init__(self, i2c):
+    def __init__(self, i2c, mapa):
         self.i2c = i2c
+        self.mapa=mapa
         try:
             self.i2c.writeto_mem(self.TCS_ADDR, self.COMMAND_BIT | self.ENABLE, b'\x03')
             # Tempo de integração (2.4ms × (256 - ATIME)) → ATIME = 0xC0 → ~60ms
@@ -32,7 +33,7 @@ class TCS34725:
 
     def hsv(self): return self._rgbc_to_hsv(self.rgbc())
 
-    def cor(self, cacamba = False): return self._classificar_cor(self.hsv(), cacamba)
+    def cor(self): return self._classificar_cor(self.hsv(), self.mapa)
 
     def _read_crgb(self):
         return struct.unpack("<HHHH", self._read_bytes(self.CDATAL, 2*4))
@@ -64,42 +65,40 @@ class TCS34725:
         return (int(h), int(s), int(v))
 
     @staticmethod
-    def _classificar_cor(hsv: tuple, cacamba) -> cor:
-        h, s, v = hsv
-        if cacamba:
-            if (s <= 75 and v <= 120): return cor.PRETO
-        else:
-            if (h >= 50 and h <= 91) and (v >= 90 and v <= 96): return cor.BRANCO
-            if (h >= 30 and h <= 150) and (s <= 110 and v <= 110): return cor.PRETO
-
-        if (h >= 20 and h <= 50) and (s <= 130):            return cor.MARROM
-        if (h >= 0 and h <= 10) or (h >= 330 and h <= 360): return cor.VERMELHO
-
-        if (h >= 20  and h <= 60):  return cor.AMARELO
-        if (h >= 60  and h <= 150): return cor.VERDE
-        if (h >= 180 and h <= 260): return cor.AZUL
-
+    def _classificar_cor(hsv: tuple, mapa: dict) -> cor:
+        if hsv in mapa[cor.BRANCO  ]: return cor.BRANCO
+        if hsv in mapa[cor.PRETO   ]: return cor.PRETO
+        if hsv in mapa[cor.MARROM  ]: return cor.MARROM
+        if hsv in mapa[cor.VERMELHO]: return cor.VERMELHO
+        if hsv in mapa[cor.AMARELO ]: return cor.AMARELO
+        if hsv in mapa[cor.VERDE   ]: return cor.VERDE
         return cor.NENHUMA
-        
-# class intervalo_hsv:
-#     def range(m=None, M=None, /, *, sup=1000):
-#         if m is None: return range(0, sup+1)
-#         if M is None: return range(0,   m+1)
-#         else:         return range(m,   M+1)
-# 
-#     def __init__(self, h=None, s=None, v=None):
-#         self.h = self.range(*h) if h else self.range()
-#         self.s = self.range(*s) if s else self.range()
-#         self.v = self.range(*v) if v else self.range()
-# 
-#     def __contains__(self, hsv):
-#         h, s, v = hsv
-#         return (
-#             (h in self.h) and (s in self.s) and (v in self.v)
-#         )
-# 
-# if hsv in mapa[cor.PRETO]: return cor.PRETO
-# 
-# mapa = {
-#     cor.PRETO: intervalo_hsv(s=(75), v=(120)),
-# }
+
+class intervalo_hsv:
+    class range_i:
+        def __init__(self, m, M=None):
+            if M is None: self.m, self.M = 0, m
+            else:         self.m, self.M = m, M
+        def __contains__(self, h):
+            return h in range(self.m, self.M+1)
+
+    class range_h(range_i):
+        def __init__(self, m, M=None, sup=360):
+            super().__init__(m,M)
+            if self.m > self.M:
+                self.__contains__ = self.__contains_h__
+            self.sup = sup
+
+        def __contains_h__(self, h):
+            return (h - self.m) % self.sup in range(self.M - self.m, self.sup+1)
+
+    def __init__(self, h=None, s=None, v=None):
+        self.h = self.range_h(*h) if h else self.range_i(360)
+        self.s = self.range_i(*s) if s else self.range_i(1000)
+        self.v = self.range_i(*v) if v else self.range_i(1000)
+
+    def __contains__(self, hsv):
+        h, s, v = hsv
+        return (
+            (h in self.h) and (s in self.s) and (v in self.v)
+        )
