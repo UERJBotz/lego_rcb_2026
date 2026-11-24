@@ -48,7 +48,6 @@ $(TESTE_BRACO): braco.py
 #! ver algum jeito de não fazer upload sem precisar
 # #! if grep -q $< <<<"$(AMPY) ls"; then echo "já tá" fi
 # #! if ! "$(AMPY) get $<"; then echo "não tá" fi
-rabo:: rabo_main
 rabo:: bluetooth.py
 	$(AMPY) --port /dev/ttyUSB0 put $< blt.py
 rabo:: comum.py
@@ -65,10 +64,12 @@ rabo:: firmware/boot.py
 	$(AMPY) --port /dev/ttyUSB0 put $<
 rabo:: firmware/bleradio.py
 	$(AMPY) --port /dev/ttyUSB0 put $<
+rabo:: rabo_main
 
 .PHONY: rabo_main
 rabo_main:: rabo.py
 	$(AMPY) --port /dev/ttyUSB0 put $< main.py
+	minicom -D /dev/ttyUSB0
 
 .PHONY: clean
 clean:
