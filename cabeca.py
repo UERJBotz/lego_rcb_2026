@@ -595,6 +595,16 @@ def achar_não_cruzamento_linha(*, dist_max=TAM_PISTA_TODA, **kwargs):
     seguir_linha_até(até_dist_max_ou_não_cruzamento(dist_max), **kwargs)
     bipes.separador()
 
+def achar_não_cruzamento(*, dist_max=TAM_PISTA_TODA, **kwargs):
+    andar_até_idx(
+        lambda: (até_não_cruzamento(rodas.distance(),
+                                    sensor_cor_dir.reflection(),
+                                    sensor_cor_centro.reflection(),
+                                    sensor_cor_esq.reflection(),
+                                    preto=(lambda luz: (luz < REFL_IDEAL))),
+                 None), dist_max=dist_max, **kwargs)
+    bipes.separador()
+
 def achar_cruzamento_linha(*, dist_max=TAM_PISTA_TODA, **kwargs):
     seguir_linha_até(até_dist_max_ou_cruzamento(dist_max), **kwargs)
     bipes.separador()
@@ -674,11 +684,13 @@ def curva_linha_esquerda():
     dir_linha.mul = dir_linha.DIR
     rodas.curve(DIST_EIXO_SENSOR, -90)
     girar_orientação(-1)
+    LOG(f"curva_linha_esquerda: {orientação_estimada=}")
 
 def curva_linha_direita():
     dir_linha.mul = dir_linha.ESQ
     rodas.curve(DIST_EIXO_SENSOR, +90)
     girar_orientação(+1)
+    LOG(f"curva_linha_direita: {orientação_estimada=}")
 
 
 def alinha_parede(vel, vel_ang, giro_max=45,
@@ -788,50 +800,70 @@ def alinha_re(max_tentativas=3,
     return extra
 
 def seguir_caminho(caminho): #! lidar com outras coisas
-    def interpretar_movimento_livre(mov):
-        #! fazer run length encoding aqui
-        if   mov == tipo_movimento.FRENTE:
-            rodas.straight(TAM_BLOCO, then=Stop.COAST)
-        elif mov == tipo_movimento.TRAS:
-            dar_meia_volta()
-            rodas.straight(TAM_BLOCO, then=Stop.COAST)
-        elif mov == tipo_movimento.ESQUERDA_FRENTE:
-            virar_esquerda()
-            rodas.straight(TAM_BLOCO, then=Stop.COAST)
-        elif mov == tipo_movimento.DIREITA_FRENTE:
-            virar_direita()
-            rodas.straight(TAM_BLOCO, then=Stop.COAST)
-        elif mov == tipo_movimento.ESQUERDA:
-            virar_esquerda()
-        elif mov == tipo_movimento.DIREITA:
-            virar_direita()
+    def interpretar_movimento_livre(mov, cnt):
+        for _ in cnt:
+            if   mov == tipo_movimento.FRENTE:
+                rodas.straight(TAM_BLOCO, then=Stop.COAST)
+            elif mov == tipo_movimento.TRAS:
+                dar_meia_volta()
+                rodas.straight(TAM_BLOCO, then=Stop.COAST)
+            elif mov == tipo_movimento.ESQUERDA_FRENTE:
+                virar_esquerda()
+                rodas.straight(TAM_BLOCO, then=Stop.COAST)
+            elif mov == tipo_movimento.DIREITA_FRENTE:
+                virar_direita()
+                rodas.straight(TAM_BLOCO, then=Stop.COAST)
+            elif mov == tipo_movimento.ESQUERDA:
+                virar_esquerda()
+            elif mov == tipo_movimento.DIREITA:
+                virar_direita()
 
-    def interpretar_movimento_cidade(mov):
-        #! fazer run length encoding aqui
-        if   mov == tipo_movimento.FRENTE:
-            achar_cruzamento_linha(dist_max=TAM_BLOCO + 2*DIST_EIXO_SENSOR)
-            achar_não_cruzamento_linha(dist_max=TAM_FAIXA)
-        elif mov == tipo_movimento.TRAS:
-            dar_meia_volta_linha()
-            achar_cruzamento_linha(dist_max=TAM_BLOCO + 2*DIST_EIXO_SENSOR)
-        elif mov == tipo_movimento.ESQUERDA_FRENTE:
-            curva_linha_esquerda()
-            achar_cruzamento_linha(dist_max=TAM_BLOCO + 2*DIST_EIXO_SENSOR)
-        elif mov == tipo_movimento.DIREITA_FRENTE:
-            curva_linha_direita()
-            achar_cruzamento_linha(dist_max=TAM_BLOCO + 2*DIST_EIXO_SENSOR)
-        elif mov == tipo_movimento.ESQUERDA:
-            curva_linha_esquerda()
-        elif mov == tipo_movimento.DIREITA:
-            curva_linha_direita()
+    def interpretar_movimento_cidade(mov, cnt):
+        if  mov == tipo_movimento.FRENTE:
+            for _ in range(cnt//2):
+                achar_cruzamento_linha(dist_max=2*TAM_BLOCO)
+                achar_não_cruzamento(dist_max=TAM_FAIXA)
+                cnt -= 2
+            if (cnt % 2) != 0:
+                achar_cruzamento_linha(dist_max=TAM_BLOCO + 2*DIST_EIXO_SENSOR)
+            return
+
+        for _ in range(cnt):
+            if mov == tipo_movimento.TRAS:
+                dar_meia_volta_linha()
+                achar_cruzamento_linha(dist_max=TAM_BLOCO + 2*DIST_EIXO_SENSOR)
+            elif mov == tipo_movimento.ESQUERDA_FRENTE:
+                curva_linha_esquerda()
+                achar_cruzamento_linha(dist_max=TAM_BLOCO + 2*DIST_EIXO_SENSOR)
+            elif mov == tipo_movimento.DIREITA_FRENTE:
+                curva_linha_direita()
+                achar_cruzamento_linha(dist_max=TAM_BLOCO + 2*DIST_EIXO_SENSOR)
+            elif mov == tipo_movimento.ESQUERDA:
+                curva_linha_esquerda()
+            elif mov == tipo_movimento.DIREITA:
+                curva_linha_direita()
 
     if na_grade: interpretar_movimento = interpretar_movimento_cidade
     else:        interpretar_movimento = interpretar_movimento_livre
 
-    def interpretar_caminho(caminho): #! receber orientação?
-        for mov in caminho: #! yield orientação nova?
-            LOG(f"seguir_caminho: {tipo_movimento(mov)}")
-            interpretar_movimento(mov)
+    def interpretar_caminho(_caminho): #! receber orientação?
+        caminho = _caminho.copy()
+        movs = []
+        count = 1
+        mov_ant = caminho.pop(0)
+        while caminho:
+            if (mov := caminho.pop(0)) == mov_ant:
+                count += 1
+            else:
+                movs.append((mov_ant, count))
+                mov_ant = mov
+                count = 1
+        movs.append((mov_ant, count))
+
+        for mov, cnt in movs: #! yield orientação nova?
+            LOG(f"seguir_caminho: {cnt} {tipo_movimento(mov)}s")
+            wait(2000) #! só pra testar !!!!!!!!!!!!!!!!!!!!!!!
+            interpretar_movimento(mov, cnt)
             yield rodas.distance()
 
     movs, ori_final = achar_movimentos(caminho, orientação_estimada)
