@@ -190,11 +190,47 @@ def test():
 
     blt.SILENCIOSO = True
 
-    if True:
+    if False:
         global BOTÕES_DESLIGA
         BOTÕES_DESLIGA = {Button.CENTER}
 
     if True:
+        if True:
+            cores_caçambas = [
+                Cor.enum.NENHUMA for _ in range(NUM_CAÇAMBAS)
+            ]
+            if True: cores_caçambas[0] = Cor.VERMELHO
+            if True: cores_caçambas[1] = Cor.AMARELO
+            if True: cores_caçambas[2] = Cor.AZUL
+            if True: cores_caçambas[3] = Cor.VERDE
+            if True: cores_caçambas[4] = Cor.PRETO
+            blt.mostrar_caçambas(cores_caçambas)
+
+        if False: orientação_estimada = "N"
+        if False: orientação_estimada = "S"
+        if True: orientação_estimada = "L"
+        if False: orientação_estimada = "O"
+
+        atravessa_rua_pegando_cubo_ou_nao(((0,0), (0,1)))
+        atravessa_rua_pegando_cubo_ou_nao(((0,1), (0,2)))
+
+        curva_linha_direita()
+
+        atravessa_rua_pegando_cubo_ou_nao(((0,2), (1,2)))
+
+        curva_linha_esquerda()
+
+        atravessa_rua_pegando_cubo_ou_nao(((1,2), (2,2)))
+
+        curva_linha_esquerda()
+
+        atravessa_rua_pegando_cubo_ou_nao(((1,2), (2,2)))
+
+        curva_linha_direita()
+
+        atravessa_rua_pegando_cubo_ou_nao(((0,2), (1,2)))
+
+    if False:
         if False: tira_obstaculo((0,2))
         if False: tira_obstaculo((0,4))
         if False: tira_obstaculo((1,5))
@@ -593,7 +629,6 @@ def até_dist_max_ou_não_cruzamento(dist_max):
 
 def achar_não_cruzamento_linha(*, dist_max=TAM_PISTA_TODA, **kwargs):
     seguir_linha_até(até_dist_max_ou_não_cruzamento(dist_max), **kwargs)
-    bipes.separador()
 
 def achar_não_cruzamento(*, dist_max=TAM_PISTA_TODA, **kwargs):
     andar_até_idx(
@@ -603,7 +638,6 @@ def achar_não_cruzamento(*, dist_max=TAM_PISTA_TODA, **kwargs):
                                     sensor_cor_esq.reflection(),
                                     preto=(lambda luz: (luz < REFL_IDEAL))),
                  None), dist_max=dist_max, **kwargs)
-    bipes.separador()
 
 def achar_cruzamento_linha(*, dist_max=TAM_PISTA_TODA, **kwargs):
     seguir_linha_até(até_dist_max_ou_cruzamento(dist_max), **kwargs)
@@ -682,13 +716,19 @@ def girar_orientação(passos):
 
 def curva_linha_esquerda():
     dir_linha.mul = dir_linha.DIR
-    rodas.curve(DIST_EIXO_SENSOR, -90)
+    alinha_eixo_cruzamento()
+    rodas.turn(-90)
+    #dar_ré(DIST_EIXO_SENSOR)
+    #alinha_eixo_cruzamento()
     girar_orientação(-1)
     LOG(f"curva_linha_esquerda: {orientação_estimada=}")
 
 def curva_linha_direita():
     dir_linha.mul = dir_linha.ESQ
-    rodas.curve(DIST_EIXO_SENSOR, +90)
+    alinha_eixo_cruzamento()
+    rodas.turn(+90)
+    #dar_ré(DIST_EIXO_SENSOR)
+    #alinha_eixo_cruzamento()
     girar_orientação(+1)
     LOG(f"curva_linha_direita: {orientação_estimada=}")
 
@@ -1033,12 +1073,90 @@ def varredura(pos_estimada, caçambas):
 def partial(func, *args, **kwargs):
     return lambda *a, **kw: func(*args, *a, **kwargs, **kw)
 
+def verificar_aresta(dist_cubo_perto=TAM_BLOCO, dist_max=TAM_QUARTEIRÃO, dist_min=DIST_CRUZAMENTO_CUBO//10):
+    ## estamos no cruzamento virados pra aresta
+    rodas.reset()
+    achar_não_cruzamento()
+    dist = blt.ver_dist_cubo()
+    if dist <= dist_cubo_perto:
+        # tem cubo e precisamos ver a cor
+        andar_dist_linha(dist)
+        cor = blt.ver_cor_cubo()
+        if cor == Cor.NENHUMA:
+            # leitura falsa de distância ou cor errada ou viu inimigo
+            LOG("verificar_aresta: cel livre viu cor.NENHUMA*")
+            achar_cruzamento_linha(dist_max=dist_max-rodas.distance())
+            return True, Cor.NENHUMA
+        else:
+            # pode ter cubo pegável
+            rejeitado = False
+            if cor == Cor.BRANCO:
+                LOG(f"verificar_aresta: cubo BRANCO")
+                bipes.cabeca()
+            if cor not in cores_caçambas:
+                LOG(f"verificar_aresta: cubo desconhecido cor {cor}")
+                rejeitado = True
+            elif cubos_caçambas[cores_caçambas.index(cor)] >= NUM_CUBOS_PEGÁVEIS:
+                LOG(f"verificar_aresta: cubo caçamba cheia cor {cor}")
+                rejeitado = True
+
+            if rejeitado:
+                # cubo impegável
+                andado = rodas.distance()
+                #dar_ré(andado + DIST_EIXO_SENSOR)
+                dar_ré(andado)
+                #alinha_eixo_cruzamento() #! tirar pq todas as funções de depois já fazem
+                LOG(f"verificar_aresta: {andado=}, {dist=}")
+                return False, cor
+            else:
+                # um cubo pegável
+                LOG(f"verificar_aresta: viu cor.{Cor(cor)}")
+                blt.abaixar_garra()
+                blt.fechar_garra()
+                blt.mediar_garra()
+                cubos_no_robo[0] = cor #! Mudar a logica do 0 ao pegar dois cubos.
+                blt.mostrar_cubos(cubos_no_robo)
+
+                achar_cruzamento_linha(dist_max=dist_max-rodas.distance())
+                return True, cor
+    else:
+        # não tem cubo
+        LOG("verificar_aresta: cel livre viu dist longe")
+        achar_cruzamento_linha(dist_max=dist_max)
+        return True, Cor.NENHUMA
+
+def alinha_eixo_cruzamento():
+    dist_ini = rodas.distance()
+    achar_não_cruzamento()
+    tam_faixa = rodas.distance() - dist_ini 
+    LOG(f"alinha_eixo_cruzamento: tamanho faixa lido {tam_faixa} vs {TAM_FAIXA} esperado")
+    if tam_faixa:
+        seguir_linha_até(até_dist_max(DIST_EIXO_SENSOR - tam_faixa))
+    else:
+        seguir_linha_até(até_dist_max(DIST_EIXO_SENSOR - TAM_FAIXA))
+
+def atravessa_rua_pegando_cubo_ou_nao(aresta, dist_max=TAM_QUARTEIRÃO):
+    def tira_obstaculo(aresta):   LOG(f"tira {aresta}")   #!!!!!!
+    def coloca_obstaculo(aresta): LOG(f"coloca {aresta}") #!!!!!!
+
+    passa, cor = verificar_aresta(dist_max=dist_max)
+    ini, fim = aresta
+    if passa:
+        # cubo ou nada
+        tira_obstaculo(aresta)
+        return cor, fim
+    else:
+        # obstáculo
+        coloca_obstaculo(aresta)
+        return cor, ini
+
+
 #! tá empurrando?
 def procura(pos_estimada, cores_caçambas):
     ## ordena as célular incertas por distância à origem
     cel_incertas = pegar_celulas_incertas_alcancaveis(pos_estimada)
     cel_atual = pos_estimada
-    
+
     ## garra
     blt.retrair_plataforma()
     blt.mediar_garra()
@@ -1056,7 +1174,7 @@ def procura(pos_estimada, cores_caçambas):
         cel_destino = candidatas[0]
         cel_incertas.remove(cel_destino)
         caminho = caminhos_incertas[cel_destino]
-                
+
         if not caminho:
             LOG("procura: nenhum caminho encontrado")
             continue
