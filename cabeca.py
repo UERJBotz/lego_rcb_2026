@@ -213,7 +213,7 @@ def test():
 
     blt.SILENCIOSO = True
 
-    if False:
+    if True:
         global BOTÕES_DESLIGA
         BOTÕES_DESLIGA = {Button.CENTER}
 
@@ -1285,24 +1285,22 @@ def procura(pos_estimada, cores_caçambas):
     ## ordena as células incertas por distância à origem
     cel_incertas = pegar_celulas_incertas()
     cel_atual = pos_estimada
-
-    caminhos_incertas = {
-        cel: achar_caminhos(cel_atual, cel, orientação_estimada) for cel in cel_incertas
-    }
-    cel_incertas.sort(key=lambda x: (
-        len(caminhos_incertas[x]) if caminhos_incertas[x] is not None else 9000
-    ))
-
+    
     ## garra
     blt.retrair_plataforma()
     blt.mediar_garra()
     blt.abrir_garra()
 
-    ## passa por cada um das células incertas
-    for cel_destino in cel_incertas:
-        LOG("tentando de", cel_atual, "até :", cel_destino)
-
-        caminho = achar_caminhos(cel_atual, cel_destino, orientação_estimada)
+    while cel_incertas:
+        caminhos_incertas = {
+            cel: achar_caminhos(cel_atual, cel, orientação_estimada) for cel in cel_incertas
+        }
+        cel_incertas.sort(key=lambda x: (
+            len(caminhos_incertas[x]) if caminhos_incertas[x] is not None else 9000
+        ))
+        
+        cel_destino = cel_incertas.pop(0)
+        caminho = caminhos_incertas[cel_destino]
         if not caminho:
             LOG("procura: nenhum caminho encontrado")
             continue

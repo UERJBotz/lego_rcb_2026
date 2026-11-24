@@ -44,13 +44,13 @@ class FronteiraPrioridade():
         return len(self.frontier) == 0
 
 class FronteiraAestrela(FronteiraPrioridade):
-    def __init__(self, src, dest):
+    def __init__(self, dest, posicoes):
         super().__init__()
-        self.src  = src
+        self.posicoes = posicoes
         self.dest = dest
 
     def add(self, noh, custo):
-        peso = custo + heuristica(self.src, self.dest)
+        peso = custo + heuristica(self.posicoes[noh], self.dest)
         super().add(noh, peso)
 
 class FronteiraFila(FronteiraPrioridade):
@@ -308,7 +308,7 @@ def custo_transicao(atual, vizinho, posicoes):
 #    print("a_estrela: não achou")
 #    return None
 
-def escolher_caminho(grid, grafo, src, dest, orientacao, estrategia='dijkstra'):
+def escolher_caminho(grid, grafo, src, dest, orientacao, estrategia='a_estrela'):
     ok = True
 
     if not dentro_dos_limites(grid, src):
@@ -316,9 +316,9 @@ def escolher_caminho(grid, grafo, src, dest, orientacao, estrategia='dijkstra'):
     if not dentro_dos_limites(grid, dest):
         ok = False; print(f"{estrategia}: destino inválido {dest}")
     if not celula_livre(grid, src):
-        ok = False; print(f"{a_estrategia}: origem bloqueada {src}")
+        ok = False; print(f"{estrategia}: origem bloqueada {src}")
     if celula_ocupada(grid, dest):
-        ok = False; print(f"{a_estrategia}: destino bloqueado {dest}")
+        ok = False; print(f"{estrategia}: destino bloqueado {dest}")
 
     if not ok:
         return None
@@ -335,7 +335,7 @@ def escolher_caminho(grid, grafo, src, dest, orientacao, estrategia='dijkstra'):
             for noh in grafo[i][j].values():
                 posicoes[noh] = (i, j)
 
-    nohs_iniciais = list(grafo[src[0]][src[1]].values())
+    nohs_iniciais = set(grafo[src[0]][src[1]].values())
     nohs_destino  = set(grafo[dest[0]][dest[1]].values()) 
     
     if not nohs_iniciais or not nohs_destino:
@@ -345,14 +345,14 @@ def escolher_caminho(grid, grafo, src, dest, orientacao, estrategia='dijkstra'):
     if   estrategia == 'bfs'  : fronteira = FronteiraFila()
     elif estrategia == 'dijkstra': fronteira = FronteiraPrioridade() 
     elif estrategia == 'dfs': fronteira = FronteiraPilha()
-    else: fronteira = FronteiraAestrela(src, dest)
+    else: fronteira = FronteiraAestrela(dest, posicoes)
     
     pai = {}
     passos_dados = {}
     concluidos = set()
 
     for noh in nohs_iniciais:
-        custo = custo_virada(orientacao, oposta[noh.direcao])
+        custo = custo_virada(orientacao, noh.direcao)
 
         passos_dados[noh] = custo
         fronteira.add(noh, custo)
@@ -366,7 +366,8 @@ def escolher_caminho(grid, grafo, src, dest, orientacao, estrategia='dijkstra'):
         if noh_atual in nohs_destino: return tracar_caminho(pai, posicoes, noh_atual, src)
 
         for vizinho in noh_atual.vizinhos:
-            if vizinho in concluidos: continue
+            if vizinho in concluidos:
+                continue
 
             pos_vizinho = posicoes[vizinho]
 

@@ -100,20 +100,55 @@ def olhar(destino):
     angulo = DIRECOES[(destino[0] - pos[0], destino[1] - pos[1])]
     for i in range(15): desenhar()
 
+#def procura():
+#    cel_atual = pos
+#    incertas = pegar_celulas_incertas()
+#    caminhos_incertas = {
+#        cel: achar_caminhos(cel_atual, cel, ORIENTACOES[angulo%360])
+#        for cel in incertas
+#    }
+#    incertas.sort(key=lambda cel: (
+#        len(caminhos_incertas[cel])
+#        if caminhos_incertas[cel] is not None else 9000
+#    ))
+#
+#    for destino in incertas:
+#        caminho = achar_caminhos(cel_atual, destino, ORIENTACOES[angulo%360])
+#        if not caminho:
+#            continue
+#
+#        caminho.pop(-1)
+#        andar(caminho)
+#        cel_atual = pos
+#
+#        olhar(destino)
+#        if destino not in CUBOS:
+#            tira_obstaculo(destino)
+#            andar([cel_atual, destino])
+#            cel_atual = destino
+#            continue
+#
+#        cor = CUBOS[destino]
+#        tira_obstaculo(destino)
+#        return destino
+    return None
+
 def procura():
     cel_atual = pos
     incertas = pegar_celulas_incertas()
-    caminhos_incertas = {
-        cel: achar_caminhos(cel_atual, cel, ORIENTACOES[angulo])
-        for cel in incertas
-    }
-    incertas.sort(key=lambda cel: (
-        len(caminhos_incertas[cel])
-        if caminhos_incertas[cel] is not None else 9000
-    ))
 
-    for destino in incertas:
-        caminho = achar_caminhos(cel_atual, destino, ORIENTACOES[angulo])
+    while incertas:
+        caminhos = {
+            cel: achar_caminhos(cel_atual, cel, ORIENTACOES[angulo % 360])
+            for cel in incertas
+        }
+        incertas.sort(key=lambda cel: (
+            len(caminhos[cel]) if caminhos[cel] else float('inf')
+        ))
+
+        destino = incertas.pop(0)
+        caminho = caminhos[destino]
+
         if not caminho:
             continue
 
@@ -125,19 +160,20 @@ def procura():
         if destino not in CUBOS:
             tira_obstaculo(destino)
             andar([cel_atual, destino])
-            cel_atual = destino
+            cel_atual = pos
             continue
 
         cor = CUBOS[destino]
         tira_obstaculo(destino)
         return destino
+
     return None
 
 while CUBOS:
     destino = procura()
     if destino is None: break               
     na_garra = CUBOS.pop(destino)              
-    andar(achar_caminhos(pos, (0, 0), ORIENTACOES[angulo]))              
+    andar(achar_caminhos(pos, (0, 0), ORIENTACOES[angulo%360]))              
     entregues.append(na_garra); na_garra = None
 
 print(f"terminou: {passos} passos, entregues: {entregues}")
