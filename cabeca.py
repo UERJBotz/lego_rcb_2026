@@ -166,8 +166,8 @@ def main():
             pos_estimada = (quarteirão_atual*2, 0)
         else:
             LOG("main: procurando")
-            achar_não_verde_alinhado()            
-            rodas.straight(DIST_EIXO_SENSOR)                           
+            achar_não_verde_alinhado()
+            rodas.straight(DIST_EIXO_SENSOR)
             dir_linha.mul = achar_direção_linha()
             rodas.turn(-rodas.angle())
 
