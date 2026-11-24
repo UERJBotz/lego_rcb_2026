@@ -169,12 +169,7 @@ def main(hub):
     cor_caçamba = cor_garra = 0
     while True:
         cor_cubo     = sensor_cubo.cor_se_perto()
-        hsv_cubo     = sensor_cubo.sensor_cor.hsv()
-        rgbc_cubo    = sensor_cubo.sensor_cor.rgbc()
-    
         cor_caçamba  = sensor_caçamba.cor_se_perto(cacamba=True)
-        #hsv_cacamba  = sensor_caçamba.sensor_cor.hsv()
-        #rgbc_caçamba = sensor_caçamba.sensor_cor.rgbc()
 
         dist_cubo    = sensor_cubo.dist()
         dist_caçamba = sensor_caçamba.dist()
@@ -188,7 +183,7 @@ def main(hub):
             led.toggle()
 
             LOG(f"caçamba: {Cor(cor_caçamba)} a {dist_caçamba}mm", 
-                f"garra: {Cor(cor_cubo)} a {dist_cubo}mm, hsv:{hsv_cubo}",
+                  f"garra: {Cor(cor_cubo)} a {dist_cubo}mm",
                 f"inimigo: a {dist_inimigo}mm", sep="\t")
 
         antes, cmd = cmd, hub.ble.observe(blt.TX_CABECA)
