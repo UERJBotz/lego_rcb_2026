@@ -8,7 +8,7 @@ from pybricks.robotics   import DriveBase
 
 from lib.caminhos import achar_movimentos, tipo_movimento
 from lib.caminhos import coloca_obstaculo, tira_obstaculo
-from lib.caminhos import imprimir_mapa
+from lib.caminhos import imprimir_mapa, heuristica
 from lib.caminhos import MAPA_X_MAX, MAPA_Y_MAX
 
 from lib.grafo import achar_caminhos, pegar_celulas_incertas_alcancaveis
@@ -996,15 +996,18 @@ def procura(pos_estimada, cores_caçambas):
     blt.abrir_garra()
 
     while cel_incertas:
+        candidatas = sorted(cel_incertas, key=lambda c: heuristica(cel_atual, c))[:3]
         caminhos_incertas = {
-            cel: achar_caminhos(cel_atual, cel, orientação_estimada) for cel in cel_incertas
+            cel: achar_caminhos(cel_atual, cel, orientação_estimada) for cel in candidatas
         }
-        cel_incertas.sort(key=lambda x: (
+        candidatas.sort(key=lambda x: (
             len(caminhos_incertas[x]) if caminhos_incertas[x] is not None else 9000
         ))
-        
-        cel_destino = cel_incertas.pop(0)
+
+        cel_destino = candidatas[0]
+        cel_incertas.remove(cel_destino)
         caminho = caminhos_incertas[cel_destino]
+                
         if not caminho:
             LOG("procura: nenhum caminho encontrado")
             continue

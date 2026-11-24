@@ -138,15 +138,16 @@ def procura():
     incertas = pegar_celulas_incertas_alcancaveis(pos)
 
     while incertas:
+        candidatas = sorted(incertas, key=lambda c: heuristica(cel_atual, c))[:3]
         caminhos = {
-            cel: achar_caminhos(cel_atual, cel, ORIENTACOES[angulo % 360])
-            for cel in incertas
+            cel: achar_caminhos(cel_atual, cel, ORIENTACOES[angulo%360]) for cel in candidatas
         }
-        incertas.sort(key=lambda cel: (
-            len(caminhos[cel]) if caminhos[cel] else float('inf')
+        candidatas.sort(key=lambda x: (
+            len(caminhos[x]) if caminhos[x] is not None else 9000
         ))
 
-        destino = incertas.pop(0)
+        destino = candidatas[0]
+        incertas.remove(destino)
         caminho = caminhos[destino]
 
         if not caminho:
