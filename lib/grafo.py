@@ -34,9 +34,6 @@ class FronteiraPrioridade():
         heappush(self.frontier, (custo, self.contador, noh))
         self.contador += 1
 
-    def contains_noh(self, noh):
-        return any(n == noh for _,_,n in self.frontier)
-
     def remove(self):
         if self.empty():
             return None
@@ -57,9 +54,6 @@ class FronteiraAestrela(FronteiraPrioridade):
 class FronteiraFila(FronteiraPrioridade):
     def add(self, noh, custo):
         self.frontier.append(noh)
-    
-    def contains_noh(self, noh):
-        return any(n == noh for n in self.frontier)
 
     def remove(self):
         if self.empty(): return None
@@ -281,7 +275,7 @@ def escolher_caminho(grid, grafo, src, dest, orientacao, estrategia='dijkstra'):
             if vizinho in concluidos:
                 continue
 
-            pos_vizinho = pos_vizinho = vizinho.posicao
+            pos_vizinho = vizinho.posicao
 
             if celula_ocupada(grid, pos_vizinho): continue
             if not (celula_livre(grid, pos_vizinho) or eh_destino(pos_vizinho, dest)): continue
