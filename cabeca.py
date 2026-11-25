@@ -146,13 +146,14 @@ def main():
             achar_não_verde_alinhado()
             rodas.straight(DIST_EIXO_SENSOR)
             dir_linha.mul = achar_direção_linha()
+            rodas.turn(-rodas.angle())
             cor, pos_estimada = varredura(pos_estimada, cores_caçambas)
             orientação_estimada = 'L'
 
             y,x = pos_estimada
             imprimir_mapa()
 
-            dar_meia_volta()
+            dar_meia_volta_linha()
             for _ in range(x):
                 achar_cruzamento_linha(dist_max=TAM_BLOCO)
                 achar_não_cruzamento()
@@ -928,7 +929,7 @@ def colocar_cubo_na_caçamba(cor_cubo, max_cubos=NUM_CUBOS_PEGÁVEIS):
 
             achar_não_verde_alinhado(max_tentativas=5, virar=False)
 
-            rodas.straight(DIST_VERDE_CAÇAMBA + DIST_EIXO_SENSOR//2)
+            rodas.straight(DIST_VERDE_CAÇAMBA)
             blt.mediar_garra()
             blt.abrir_garra()
 
