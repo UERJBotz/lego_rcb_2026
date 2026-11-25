@@ -9,7 +9,7 @@ pos = (0, 0)
 passos = 0              
 entregues = []             
 na_garra = None            
-angulo = -90                 
+angulo = 0
 caminho_atual = []
 
 ORIENTACOES = {
@@ -53,9 +53,18 @@ def desenhar_fundo():
 
 fundo = desenhar_fundo()
 
+def processar_eventos():
+    for evento in pygame.event.get():
+        if evento.type == pygame.QUIT:
+            pygame.quit()
+            raise SystemExit
+        if evento.type == pygame.KEYDOWN and evento.key == pygame.K_ESCAPE:
+            pygame.quit()
+            raise SystemExit
+
 def desenhar(lin=None, col=None):
     if lin is None: lin, col = pos
-    pygame.event.pump()
+    processar_eventos()
     tela.blit(fundo, (0, 0))
     for l, linha in enumerate(mapa):                    
         for c, cel in enumerate(linha):

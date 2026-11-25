@@ -41,9 +41,6 @@ class Cruz(Rua):
         super().__init__(estado, direc, mut)
     def __str__(self): return '#'
 
-class Safe(Cruz):
-    def __str__(self): return '*'
-
 class Vert(Rua):
     def __init__(self, estado=estado_celula.INCERTO,
                        direc=direcionalidade.VERTICAL, mut=True):
@@ -56,17 +53,23 @@ class Hori(Rua):
         super().__init__(estado, direc, mut)
     def __str__(self): return '—'
 
+class Safe(Cruz):
+    def __init__(self, estado=estado_celula.LIVRE,
+                       direc=direcionalidade.HORIZONTAL, mut=False):
+        super().__init__(estado, direc, mut)
+    def __str__(self): return '*'
+
 
 mapa = [
-    [Safe(estado=estado_celula.LIVRE), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz()],
-    [Vert(estado=estado_celula.LIVRE), Vert(), Nada(), Vert(), Nada(), Vert(), Nada(), Vert(), Nada(), Vert(), Nada(), Vert()],
-    [Safe(estado=estado_celula.LIVRE), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz()],
-    [Vert(estado=estado_celula.LIVRE), Vert(), Nada(), Vert(), Nada(), Vert(), Nada(), Vert(), Nada(), Vert(), Nada(), Vert()],
-    [Safe(estado=estado_celula.LIVRE), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz()],
-    [Vert(estado=estado_celula.LIVRE), Vert(), Nada(), Vert(), Nada(), Vert(), Nada(), Vert(), Nada(), Vert(), Nada(), Vert()],
-    [Safe(estado=estado_celula.LIVRE), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz()],
-    [Vert(estado=estado_celula.LIVRE), Vert(), Nada(), Vert(), Nada(), Vert(), Nada(), Vert(), Nada(), Vert(), Nada(), Vert()],
-    [Safe(estado=estado_celula.LIVRE), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz()],
+    [Safe(), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz()],
+    [Nada(), Vert(), Nada(), Vert(), Nada(), Vert(), Nada(), Vert(), Nada(), Vert(), Nada(), Vert()],
+    [Safe(), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz()],
+    [Nada(), Vert(), Nada(), Vert(), Nada(), Vert(), Nada(), Vert(), Nada(), Vert(), Nada(), Vert()],
+    [Safe(), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz()],
+    [Nada(), Vert(), Nada(), Vert(), Nada(), Vert(), Nada(), Vert(), Nada(), Vert(), Nada(), Vert()],
+    [Safe(), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz()],
+    [Nada(), Vert(), Nada(), Vert(), Nada(), Vert(), Nada(), Vert(), Nada(), Vert(), Nada(), Vert()],
+    [Safe(), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz()],
 ]
 
 MAPA_X_MAX = len(mapa[0]) -1
@@ -101,20 +104,6 @@ def imprimir_mapa(matriz=mapa):
                      color(COR.VERD, texto)))
             print(estado*2, end=" ")
         print()
-
-
-## implementação do A* (adaptada de <https://www.geeksforgeeks.org/a-search-algorithm-in-python/>)
-class Cell():
-    def __init__(self, i_pai=0,
-                       j_pai=0,
-                       f=float('inf'),
-                       g=float('inf'),
-                       h=0):
-        self.i_pai = i_pai # Parent cell's row index
-        self.j_pai = j_pai # Parent cell's column index
-        self.f     = f # Total cost of the cell (g + h)
-        self.g     = g # Cost from start to this cell
-        self.h     = h # Heuristic cost from this cell to destination
 
 direcoes = [(0, 1), (1, 0), (0, -1), (-1, 0)]  # Movimentos: direita, baixo, esquerda, cima
 
@@ -156,123 +145,6 @@ def eh_destino(src, dest):
 
 def heuristica(src, dest):
     return dist_manhatan(src, dest)
-
-# Trace the path from source to destination
-def tracar_caminho(info_celulas, dest):
-    print("The Path is ")
-    path = []
-    row, col = dest
-
-    # Trace the path from destination to source using parent cells
-    while not (info_celulas[row][col].i_pai == row and info_celulas[row][col].j_pai == col):
-        path.append((row, col))
-        temp_row = info_celulas[row][col].i_pai
-        temp_col = info_celulas[row][col].j_pai
-        row = temp_row
-        col = temp_col
-
-    # Add the source cell to the path
-    path.append((row, col))
-    # Reverse the path to get the path from source to destination
-    path.reverse()
-    
-    return path
-
-# Implement the A* search algorithm
-def a_estrela(grid, src, dest):
-    ok = True
-    if not dentro_dos_limites(grid, src):
-        ok = False; print(f"a_estrela: origem inválida {src}")
-    if not dentro_dos_limites(grid, dest):
-        ok = False; print(f"a_estrela: destino inválido {dest}")
-
-    if not celula_livre(grid, src):
-        ok = False; print(f"a_estrela: origem bloqueada {src}")
-    if celula_ocupada(grid, dest):
-        ok = False; print(f"a_estrela: destino bloqueado {dest}")
-
-    if not ok: return None
-
-    # Check if we are already at the destination
-    if eh_destino(src, dest):
-        print(f"a_estrela: já no destino {src, dest}"); return []
-
-    ROW = len(grid)
-    COL = len(grid[0])
-
-    # Initialize the closed list (visited cells)
-    closed_list  = [[False for _ in range(COL)]  for _ in range(ROW)]
-    # Initialize the details of each cell
-    info_celulas = [[Cell() for _ in range(COL)] for _ in range(ROW)]
-
-    # Initialize the start cell details
-    i, j = src
-    info_celulas[i][j] = Cell(f=0,
-                              g=0,
-                              h=0,
-                              i_pai=i,
-                              j_pai=j)
-
-    # Initialize the open list (cells to be visited) with the start cell
-    open_list = []
-    heappush(open_list, (0.0, i, j))
-
-    # Initialize the flag for whether destination is found
-    achou_dest = False
-
-    # Main loop of A* search algorithm
-    while len(open_list) > 0:
-        # Pop the cell with the smallest f value from the open list
-        p = heappop(open_list)
-
-        # Mark the cell as visited
-        i = p[1]
-        j = p[2]
-        closed_list[i][j] = True
-
-        # For each direction, check the successors
-        for dir in direcoes:
-            new_i = i + dir[0]
-            new_j = j + dir[1]
-            new = new_i, new_j
-
-            # If the successor is valid, (unblocked or is destiny), and not visited
-            if ((dentro_dos_limites(grid, new) and celula_livre(grid, new)) or
-                (eh_destino(new, dest) and not closed_list[new_i][new_j])):
-
-                if celula_especialmente_bloqueada(grid, (i,j), new): continue
-
-                # If the successor is the destination
-                if eh_destino(new, dest):
-                    # Set the parent of the destination cell
-                    info_celulas[new_i][new_j].i_pai = i
-                    info_celulas[new_i][new_j].j_pai = j
-                    print("a_estrela: caminho encontrado")
-                    # Trace and print the path from source to destination
-                    return tracar_caminho(info_celulas, dest)
-                else:
-                    # Calculate the new f, g, and h values
-                    g_new = info_celulas[i][j].g + 1.0
-                    h_new = heuristica(new, dest)
-                    f_new = g_new + h_new
-
-                    # If the cell is not in the open list or the new f value is smaller
-                    if (info_celulas[new_i][new_j].f == float('inf') or
-                        info_celulas[new_i][new_j].f > f_new):
-                        # Add the cell to the open list
-                        heappush(open_list, (f_new, new_i, new_j))
-                        # Update the cell details
-                        info_celulas[new_i][new_j] = Cell(f = f_new,
-                                                          g = g_new,
-                                                          h = h_new,
-                                                          i_pai = i,
-                                                          j_pai = j)
-
-    # If the destination is not found after visiting all cells
-    if not achou_dest:
-        print("a_estrela: não achou")
-
-    return None
 
 #funcao que recebe lista de posicoes na matriz e transforma em lista de direcoes
 def caminho_relativo(caminho_absoluto: list[tuple[int, int]]):
@@ -346,10 +218,6 @@ def pegar_celulas_incertas():
             if mapa[i][j].estado == estado_celula.INCERTO:
                 incertas.append((i, j))
     return incertas
-
-def achar_caminhos(pos_ini, pos_fim):
-    caminho = a_estrela(mapa, pos_ini, pos_fim)
-    return caminho
 
 def achar_movimentos(caminho, orientacao):
     caminho_rel = caminho_relativo(caminho)
