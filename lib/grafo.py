@@ -1,6 +1,8 @@
 from lib.caminhos import *
 
 # construindo grafo
+PESO_GIRO = 1
+PESO_RETA_BLOCO = 1
 
 class Noh:
     NORTE = "N"
@@ -15,9 +17,18 @@ class Noh:
         OESTE: (0, -1)
     }
 
-class No:
-    def __init__(self, celula, direcao, posicao):
-        self.celula = celula
+class Node:
+    def __init__(self, key):
+        self.key = key
+        self.adj = []
+
+    def connect(self, node):
+        self.adj.append(node)
+
+class Nó(Node):
+    def __init__(self, celula, posicao, direcao):
+        super().__init__((posicao, direcao))
+        self.celula  = celula
         self.direcao = direcao
         self.posicao = posicao
         self.vizinhos = []
@@ -25,13 +36,43 @@ class No:
         # Vert -> 2
         # Hori -> 2
 
+class Aresta:
+    def __init__(self, ini, fim, peso):
+        self.ini = ini
+        self.fim = fim
+        self.peso = peso
+
+class Graph:
+    def __init__(self):
+        self.nós = dict()
+        self.arestas = dict()
+
+    def add(self, node):
+        self.nós[node.key] = node #! sobrescreve
+
+    def get(self, key):
+        return self.nós.get(key)
+
+    def connect(self, ini, fim, peso=1):
+        self.nós[ini].connect(self.nós[fim])
+        self.arestas[ini, fim] = Aresta(ini, fim, peso)
+
+    def peso(self, ini, fim):
+        return self.arestas[ini, fim].peso
+
+class Grafo(Graph):
+    def get_by_pos(self, pos):
+        return set(map(lambda x: x.key,
+                   filter(lambda x: x is not None,
+                         (self.get((pos, d)) for d in ('N', 'S', 'L', 'O')))))
+
 class FronteiraPrioridade():
     def __init__(self):
         self.frontier = []
         self.contador = 0
 
-    def add(self, noh, custo):
-        heappush(self.frontier, (custo, self.contador, noh))
+    def add(self, nó, custo):
+        heappush(self.frontier, (custo, self.contador, nó))
         self.contador += 1
 
     def remove(self):
@@ -47,13 +88,13 @@ class FronteiraAestrela(FronteiraPrioridade):
         super().__init__()
         self.dest = dest
 
-    def add(self, noh, custo):
-        peso = custo + heuristica(noh.posicao, self.dest)
-        super().add(noh, peso)
+    def add(self, nó, custo):
+        peso = custo + heuristica(nó.posicao, self.dest)
+        super().add(nó, peso)
 
 class FronteiraFila(FronteiraPrioridade):
-    def add(self, noh, custo):
-        self.frontier.append(noh)
+    def add(self, nó, custo):
+        self.frontier.append(nó)
 
     def remove(self):
         if self.empty(): return None
@@ -66,160 +107,61 @@ class FronteiraPilha(FronteiraFila):
         if self.empty(): return None
         return self.frontier.pop()
 
-oposta = {Noh.NORTE: Noh.SUL,
-          Noh.SUL:   Noh.NORTE,
-          Noh.LESTE: Noh.OESTE,
-          Noh.OESTE: Noh.LESTE}
-
-
-def pode_conectar(mapa, pos, direcao):
+def nó_a_direção(mapa, pos, direcao):
     i, j = pos
     di, dj = Noh.DIR[direcao]
     ni, nj = i + di, j + dj
 
-    if not (0 <= ni < len(mapa) and 0 <= nj < len(mapa[0])): return None
-
-    vizinha = mapa[ni][nj]
+    if not ( (0 <= ni < len(mapa)) and 
+             (0 <= nj < len(mapa[0]))
+           ): return None
+    else: vizinha = mapa[ni][nj]
 
     if direcao in (Noh.NORTE, Noh.SUL):
         if isinstance(vizinha, (Vert, Cruz)): return (ni, nj)
-    elif isinstance(vizinha, (Hori, Cruz)):   return (ni, nj)
+    else:
+        if isinstance(vizinha, (Hori, Cruz)): return (ni, nj)
     return None
 
-#def construir_nohs(mapa):
-#    mapa_de_nohs = { (1, Noh.NORTE): [] }
-#    k = 0
-#    for i in range(len(mapa))
-#        for j in range(len(mapa[0])):
-#            celula = mapa[i][j]
-#            if isinstance(celula, Cruz):
-#                mapa_de_nohs.append({(k+0, Noh.NORTE): [(k+1, Noh.LESTE), (k+3, Noh.OESTE)],
-#                                     (k+2, Noh.SUL):   [(k+1, Noh.LESTE), (k+3, Noh.OESTE)],
-#                                     (k+1, Noh.LESTE): [(k+0, Noh.NORTE), (k+2, Noh.SUL)],
-#                                     (k+3, Noh.OESTE): [(k+0, Noh.NORTE), (k+2, Noh.SUL)]})
-#                k += 4
-#            elif isintance(celula, Vert):
-#                mapa_de_nohs.append({(k+0): [],
-#                                     (k+1): []})
-#                k += 2
-#            elif isintance(celula, Hori):
-#                mapa_de_nohs.append([Noh.NORTE,
-#                                     Noh.SUL])
-#
-#    return mapa_de_nohs
-
-#def construir_nohs(mapa):
-#    mapa_em_nohs = []
-#    k = 0
-#    for i in range(len(mapa)):
-#        linha_nohs = []
-#        for j in range(len(mapa[0])):
-#            celula = mapa[i][j]
-#            nohs = {}
-#            if isinstance(celula, Cruz):
-#                if pode_conectar(mapa, (i, j), Noh.NORTE): nohs[(k+0, Noh.NORTE)] = []
-#                if pode_conectar(mapa, (i, j), Noh.LESTE): nohs[(k+1, Noh.LESTE)] = []
-#                if pode_conectar(mapa, (i, j), Noh.SUL):   nohs[(k+2, Noh.SUL)] = []
-#                if pode_conectar(mapa, (i, j), Noh.OESTE): nohs[(k+3, Noh.OESTE)] = []
-#                k+=4
-#            elif isinstance(celula, Vert):
-#                if pode_conectar(mapa, (i, j), Noh.NORTE): nohs[(k+0, Noh.NORTE)] = []
-#                if pode_conectar(mapa, (i, j), Noh.SUL):   nohs[(k+1, Noh.SUL)] = []
-#                k+=2
-#            elif isinstance(celula, Hori):
-#                if pode_conectar(mapa, (i, j), Noh.LESTE): nohs[(k+0, Noh.LESTE)] = []
-#                if pode_conectar(mapa, (i, j), Noh.OESTE): nohs[(k+1, Noh.OESTE)] = []
-#                k+=2
-#
-#            linha_nohs.append(nohs)
-#        mapa_em_nohs.append(linha_nohs)
-#    return mapa_em_nohs
-
-def construir_nohs(mapa):
-    mapa_em_nohs = []
+def construir_grafo(mapa):
+    grafo = Grafo()
+    arestas_sobrando = []
     for i in range(len(mapa)):
-        linha_nohs = []
         for j in range(len(mapa[0])):
             celula = mapa[i][j]
-            nohs = {}
-            direcoes = []
-            if isinstance(celula, Cruz):   direcoes = [Noh.NORTE, Noh.SUL, Noh.LESTE, Noh.OESTE]
+            if   isinstance(celula, Cruz): direcoes = [Noh.LESTE, Noh.NORTE, Noh.OESTE, Noh.SUL]
             elif isinstance(celula, Vert): direcoes = [Noh.NORTE, Noh.SUL]
             elif isinstance(celula, Hori): direcoes = [Noh.LESTE, Noh.OESTE]
+            else:                          direcoes = []
 
-            for direcao in direcoes:
-                if (i, j) == (0, 0) and direcao == Noh.NORTE: nohs[direcao] = No(celula, direcao, (i, j))
-                elif  pode_conectar(mapa, (i, j), direcao):   nohs[direcao] = No(celula, direcao, (i, j))
+            subnós = [Nó(celula, (i, j), d) for d in direcoes]
+            for nó in subnós: grafo.add(nó)
 
             if isinstance(celula, Cruz):
-                for noh in nohs.values():
-                    for outro in nohs.values():
-                        if outro != noh: noh.vizinhos.append(outro)
-            elif len(nohs) == 2:
-                a, b = nohs.values()
-                a.vizinhos.append(b)
-                b.vizinhos.append(a)
+                for n1, n2 in zip(subnós[1:], [*subnós[:1], subnós[0]]):
+                    grafo.connect(n1.key, n2.key, peso=PESO_GIRO)
+                    grafo.connect(n2.key, n1.key, peso=PESO_GIRO)
 
-            linha_nohs.append(nohs)
-        mapa_em_nohs.append(linha_nohs)
-    return mapa_em_nohs
+            for nó in subnós:
+                if prox := nó_a_direção(mapa, nó.posicao, nó.direcao):
+                    arestas_sobrando.append((nó.key, (prox, nó.direcao)))
 
-#def conectar_celulas(mapa, mapa_em_nohs):
-#    oposta = {
-#        Noh.NORTE: Noh.SUL,
-#        Noh.SUL:   Noh.NORTE,
-#        Noh.LESTE: Noh.OESTE,
-#        Noh.OESTE: Noh.LESTE
-#    }
-#
-#    for i in range(len(mapa_em_nohs)):
-#        for j in range(len(mapa_em_nohs[0])):
-#            for noh in mapa_em_nohs[i][j]:
-#                id, direcao = noh
-#
-#                pos = pode_conectar(mapa, (i, j), direcao)
-#                if pos is None: continue
-#                ni, nj = pos
-#
-#                for vizinho in mapa_em_nohs[ni][nj]:
-#                    if vizinho[1] == oposta[direcao]:
-#                        mapa_em_nohs[i][j][noh].append(vizinho)
-#                        break
-def conectar_celulas(mapa, mapa_em_nohs):
-    for i in range(len(mapa)):
-        for j in range(len(mapa[0])):
-            for direcao, noh in mapa_em_nohs[i][j].items():
+    for n1, n2 in arestas_sobrando:
+        grafo.connect(n1, n2, peso=PESO_RETA_BLOCO)
 
-                pos = pode_conectar(mapa, (i, j), direcao)
-                if pos is None: continue
-
-                ni, nj = pos
-                vizinho = mapa_em_nohs[ni][nj].get(oposta[direcao])
-                if vizinho is not None and vizinho not in noh.vizinhos: noh.vizinhos.append(vizinho)
-
-def construir_grafo(mapa):
-    grafo = construir_nohs(mapa)
-    conectar_celulas(mapa, grafo)
     return grafo
 
-def custo_virada(ori_atual, ori_final):
-    atual = Noh.DIR[ori_atual]
-    final = Noh.DIR[ori_final]
-
-    if atual == final: return 0
-    if atual == (-final[0], -final[1]): return 2
-
-    #perpendicular
-    return 1
-
-def custo_transicao(atual, vizinho):
-    if atual.posicao != vizinho.posicao:
-        return 1
-
-    orientacao_atual = oposta[atual.direcao]
-    orientacao_final = vizinho.direcao
-
-    return custo_virada(orientacao_atual, orientacao_final)
+#def custo_transicao(atual, vizinho): #! ver se vai precisar
+#    datual = Noh.DIR[atual.direcao]
+#    i1, j1 = Noh.DIR[vizinho.direcao]
+#
+#    if atual.posicao != vizinho.posicao:
+#        if datual == ( i1,  j1): return 0
+#        if datual == (-i1, -j1): return 2*PESO_GIRO # 180º
+#        
+#        return PESO_GIRO # 90º
+#    else:
+#        return PESO_RETA_BLOCO
 
 def escolher_caminho(grid, grafo, src, dest, orientacao, estrategia='dijkstra'):
     ok = True
@@ -233,60 +175,51 @@ def escolher_caminho(grid, grafo, src, dest, orientacao, estrategia='dijkstra'):
     if celula_ocupada(grid, dest):
         ok = False; print(f"{estrategia}: destino bloqueado {dest}")
 
-    if not ok:
-        return None
+    if not ok: return None
 
     # Check if we are already at the destination
     if eh_destino(src, dest):
         print(f"{estrategia}: já no destino {src, dest}")
         return []
 
-    nohs_iniciais = set(grafo[src[0]][src[1]].values())
-    nohs_destino  = set(grafo[dest[0]][dest[1]].values()) 
+    nó_destino_keys = grafo.get_by_pos(dest)
     
-    if not nohs_iniciais or not nohs_destino:
-        print(f"{estrategia}: origem ou destino sem nós disponíveis")
+    if not nó_destino_keys:
+        print(f"{estrategia}: destino sem nós disponíveis")
         return None
 
-    if   estrategia == 'bfs'  : fronteira = FronteiraFila()
+    if   estrategia == 'bfs':      fronteira = FronteiraFila()
     elif estrategia == 'dijkstra': fronteira = FronteiraPrioridade() 
-    elif estrategia == 'dfs': fronteira = FronteiraPilha()
-    else: fronteira = FronteiraAestrela(dest)
+    elif estrategia == 'dfs':      fronteira = FronteiraPilha()
+    else:                          fronteira = FronteiraAestrela(dest)
     
-    pai = {}
-    passos_dados = {}
+    pais = dict()
+    nó_inicial = grafo.get((src, orientacao))
+    passos_dados = {} if nó_inicial is None else {nó_inicial: 0}
     concluidos = set()
 
-    for noh in nohs_iniciais:
-        custo = custo_virada(orientacao, noh.direcao)
-
-        passos_dados[noh] = custo
-        fronteira.add(noh, custo)
-
+    fronteira.add(grafo.get((src, orientacao)), 0)
     while not fronteira.empty():
-        noh_atual = fronteira.remove()
-        if noh_atual in concluidos: continue
+        nó_atual = fronteira.remove()
+        if nó_atual in concluidos: continue
 
-        concluidos.add(noh_atual)
+        concluidos.add(nó_atual)
 
-        if noh_atual in nohs_destino: return tracar_caminho(pai, noh_atual, src)
+        if nó_atual.key in nó_destino_keys: return tracar_caminho(pais, nó_atual, src)
 
-        for vizinho in noh_atual.vizinhos:
-            if vizinho in concluidos:
-                continue
+        for vizinho in nó_atual.adj:
+            if vizinho in concluidos: continue
 
-            pos_vizinho = vizinho.posicao
+            if    celula_ocupada(grid, vizinho.posicao): continue
+            if (not celula_livre(grid, vizinho.posicao) and
+                not   eh_destino(vizinho.posicao, dest)): continue
 
-            if celula_ocupada(grid, pos_vizinho): continue
-            if not (celula_livre(grid, pos_vizinho) or eh_destino(pos_vizinho, dest)): continue
-
-            novo_custo = passos_dados[noh_atual] + custo_transicao(noh_atual, vizinho)
+            novo_custo = passos_dados[nó_atual] + grafo.peso(nó_atual.key, vizinho.key)
 
             if novo_custo < passos_dados.get(vizinho, float('inf')):
                 passos_dados[vizinho] = novo_custo
-                pai[vizinho] = noh_atual
+                pais[vizinho] = nó_atual
                 fronteira.add(vizinho, novo_custo)
-
     return None
    
 def tracar_caminho(pai, atual, src):
@@ -310,27 +243,27 @@ def tracar_caminho(pai, atual, src):
 def achar_caminhos(src, dest, orientacao):
     return escolher_caminho(mapa, grafo, src, dest, orientacao)
 
-grafo = construir_grafo(mapa)
-
 def celulas_alcancaveis(src):
-    fronteira = FronteiraFila()
-    visitados = set()
-    alcancaveis = {src}
+    visitados = []
+    pos_alcançáveis = {src}
 
-    for noh in grafo[src[0]][src[1]].values(): fronteira.add(noh, 0)
+    fronteira = FronteiraFila()
+    for key in grafo.get_by_pos(src):
+        fronteira.add(grafo.get(key), 0)
 
     while not fronteira.empty():
         atual = fronteira.remove()
 
         if atual in visitados: continue
 
-        visitados.add(atual)
-        alcancaveis.add(atual.posicao)
+        visitados.append(atual)
+        pos_alcançáveis.add(atual.posicao)
 
-        for vizinho in atual.vizinhos:
-            if vizinho not in visitados: fronteira.add(vizinho, 0)
+        for vizinho in atual.adj:
+            if vizinho not in visitados:
+                fronteira.add(vizinho, 0)
 
-    return alcancaveis
+    return pos_alcançáveis
 
 def pegar_celulas_incertas_alcancaveis(src):
     cel_incertas = pegar_celulas_incertas()
@@ -340,4 +273,6 @@ def pegar_celulas_incertas_alcancaveis(src):
     cel_incertas = [cel for cel in cel_incertas
                     if cel in alcancaveis]
     return cel_incertas
+
+grafo = construir_grafo(mapa)
 

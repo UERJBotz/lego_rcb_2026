@@ -9,14 +9,14 @@ pos = (0, 0)
 passos = 0              
 entregues = []             
 na_garra = None            
-angulo = 0                 
+angulo = -90                 
 caminho_atual = []
 
 ORIENTACOES = {
-    0: "N",
-    90: "L",
-    180: "S",
-    270: "O"
+    0: "L",
+    90: "S",
+    180: "O",
+    270: "N"
 }
 
 X_MIN, X_MAX, Y_MIN, Y_MAX = -3.5, 15.5, -1.3, 9.3      
@@ -131,7 +131,7 @@ def olhar(destino):
 #        cor = CUBOS[destino]
 #        tira_obstaculo(destino)
 #        return destino
-    return None
+#    return None
 
 def procura():
     cel_atual = pos
