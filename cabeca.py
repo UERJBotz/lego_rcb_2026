@@ -3,7 +3,7 @@ from pybricks.hubs import PrimeHub
 from pybricks.pupdevices import Motor, ColorSensor, UltrasonicSensor
 from pybricks.parameters import Port, Stop, Side, Axis, Direction, Button, Color
 
-from pybricks.tools      import wait, StopWatch
+from pybricks.tools      import wait as delay
 from pybricks.robotics   import DriveBase
 
 from lib.caminhos import achar_movimentos, achar_caminhos, tipo_movimento
@@ -41,6 +41,7 @@ NUM_CAÇAMBAS = 5
 TAM_CAÇAMBA = 160
 TAM_CUBO = 50
 
+TAM_SENSOR_FRONTAL = 20
 DIST_EIXO_SENSOR = 45
 DIST_EIXO_SENSOR_FRENTE = 110
 DIST_EIXO_SENSOR_TRAS = 110
@@ -75,6 +76,11 @@ cubos_no_robo = [Cor.NENHUMA,Cor.NENHUMA]
 #! a procura para(va) no meio quando vê um cubo desconhecido e acha que é catástrofe
 
 #! na varredura, quando vê azul, parar de ir e reclamar do inimigo
+
+def WAIT(ms):
+    if TESTE:
+        LOG("DEBUG: wait", ms)
+        delay(ms)
 
 class dir_linha:
     ESQ = -1
@@ -217,6 +223,22 @@ def test():
 
         if True:
             main()
+
+    if False:
+        orientação_estimada = "L"
+        dir_linha.mul = dir_linha.DIR
+        for obs in [(8,8),
+                    (8,6),
+                    (8,4),
+                    (8,2),
+                    (7,1),
+                    (2,6),
+                    (4,6),
+                    (6,6)]:
+            tira_obstaculo(obs)
+
+        caminho = achar_caminhos((8,8), (6,6))
+        seguir_caminho_inclusivo(caminho)
 
     while False:
         cor = blt.ver_cor_cubo()
@@ -384,12 +406,12 @@ class mudar_velocidade():
     1. mudar a velocidade do robô
     2. restaurar a velocidade do robô
     """
-    def __init__(self, vel, vel_ang=None, drive_base=None): 
+    def __init__(self, vel, vel_ang=None, drive_base=None):
         self.rodas = drive_base or rodas
         self.vel   = vel
         self.vel_ang = vel_ang
- 
-    def __enter__(self): 
+
+    def __enter__(self):
         self.conf_anterior = self.rodas.settings()
         [_, *conf_resto]   = self.conf_anterior
         if self.vel_ang:
@@ -397,7 +419,7 @@ class mudar_velocidade():
         self.rodas.settings(self.vel, *conf_resto)
         return self
 
-    def __exit__(self, exc_type, exc_value, exc_traceback): 
+    def __exit__(self, exc_type, exc_value, exc_traceback):
         self.rodas.settings(*self.conf_anterior)
 
 def SucessoOuCatástrofe(*args):
@@ -425,6 +447,7 @@ def dar_meia_volta_linha():
 
     if   dir_linha.mul == dir_linha.ESQ: rodas.curve(TAM_FAIXA//2, +180)
     elif dir_linha.mul == dir_linha.DIR: rodas.curve(TAM_FAIXA//2, -180)
+
 
     orientação_estimada = inverte_orientação()
     LOG(f"dar_meia_volta_linha: {orientação_estimada=}")
@@ -506,6 +529,36 @@ def andar_até_idx(*conds_parada: Callable, dist_max=TAM_PISTA_TODA) -> tuple[bo
                 return i+1, retorno
     return 0, (rodas.distance(),)
 
+def girar_até_linha(margem=0.1, giro_max=360):
+    raio_refl = REFL_IDEAL - REFL_MIN
+    margem_refl = raio_refl*margem
+
+    centro = sensor_cor_centro.reflection()
+    if abs(centro - REFL_IDEAL) <= margem_refl:
+        LOG(f"Ja estou em cima da linha")
+        if dir_linha.mul * giro_max <= 0:
+            LOG(f"Girando pro lado oposto do dir_linha atual.")
+            rodas.straight(TAM_FAIXA)
+        else:
+            return dir_linha.mul
+
+    with mudar_velocidade(80, 30):
+        rodas.reset()
+        rodas.turn(giro_max-30, wait=False)
+        while not rodas.done():
+            centro = sensor_cor_centro.reflection()
+            if abs(centro - REFL_IDEAL) <= margem_refl and giro_max > 0:
+                rodas.stop()
+                LOG("Achei a linha e estou seguindo a esquerda dela.", centro)
+                #WAIT(2000)
+            elif abs(centro - REFL_IDEAL) <= margem_refl and giro_max < 0:
+                rodas.stop()
+                LOG("Achei a linha e estou seguindo a direita dela.", centro)
+                #WAIT(2000)
+
+        LOG("Não achei a linha.")
+        return dir_linha.mul
+
 nunca_parar   = (lambda: (False, False))
 ou_manter_res = (lambda res, ext: (res, ext))
 
@@ -522,7 +575,7 @@ def andar_até_bool(sucesso, neutro=nunca_parar, fracasso=ver_não_pista,
         elif res == 0:
             LOG("andar_até_bool: andou demais")
             return False, (None,) #ou(res, extra)
-        else: 
+        else:
             LOG(f"andar_até_bool: {res}")
             assert False
 
@@ -583,6 +636,13 @@ def achar_cruzamento_linha(*, dist_max=TAM_PISTA_TODA, **kwargs):
 def achar_direção_linha(margem=0.1, giro_max=45):
     raio_refl = REFL_IDEAL - REFL_MIN
     margem_refl = raio_refl*margem
+
+    centro = sensor_cor_centro.reflection()
+    if abs(centro - REFL_IDEAL) <= margem_refl:
+        rodas.turn(-10)
+        LOG("Ja estou em cima da linha, saindo para achar ela de novo.")
+        return achar_direção_linha(giro_max=giro_max)
+
     with mudar_velocidade(80, 30):
         rodas.reset()
         rodas.turn(giro_max, wait=False)
@@ -599,8 +659,43 @@ def achar_direção_linha(margem=0.1, giro_max=45):
                 rodas.stop()
                 LOG("Achei a linha e estou seguindo a direita dela.", centro)
                 return dir_linha.DIR
-        LOG("Não achei a linha.")                    
+        LOG("Não achei a linha.")
         return dir_linha.mul
+
+def preto(val): return val <= REFL_MIN + 5
+
+def até_não_cruzamento(dist,esq,centro,dir, preto):
+    return not (preto(esq) and preto(dir))
+
+def até_dist_max_ou_não_cruzamento(dist_max):
+    def func(dist, esq, centro, dir, preto):
+        return (
+            até_não_cruzamento(dist, esq, centro, dir,
+                preto=(lambda luz: (luz < REFL_IDEAL)) #! hardcode
+            ) or até_dist_max(dist_max)(dist, esq, centro, dir, preto)
+        )
+    return func
+
+def achar_não_cruzamento(*, dist_max=TAM_PISTA_TODA, **kwargs):
+    LOG("Pulando Cruzamento.")
+    seguir_linha_até(até_dist_max_ou_não_cruzamento((dist_max), **kwargs))
+    LOG("Cruzamento pulado.")
+
+def seguir_até(parada=até_dist_max(TAM_PISTA_TODA),
+                     *, vel=None, pid=None, parar_no_verde=False, caçamba=False):
+    if vel is None: vel = VEL_SEGUIR_LINHA
+
+    def preto(val): return val <= REFL_MIN + 5
+
+    rodas.reset()
+    rodas.drive(vel)
+    while not parada(rodas.distance(), esq, centro, dir, preto):
+        esq    = sensor_cor_esq.reflection()
+        centro = sensor_cor_centro.reflection()
+        dir    = sensor_cor_dir.reflection()
+
+    rodas.stop()
+
 
 def pid(kp, kd=0, ki=0):
     ierro = erro_ant = 0
@@ -661,6 +756,29 @@ def curva_linha_direita():
     rodas.curve(DIST_EIXO_SENSOR, +90)
     girar_orientação(+1)
 
+def virar_esquerda_linha():
+    alinhar_eixo_cruzamento()
+    rodas.turn(-45)
+    girar_até_linha(giro_max=-115)
+    dir_linha.mul = dir_linha.DIR
+    #dar_ré(DIST_EIXO_SENSOR)
+    girar_orientação(-1)
+
+def virar_direita_linha():
+    alinhar_eixo_cruzamento()
+    rodas.turn(+45)
+    girar_até_linha(giro_max=+115)
+    dir_linha.mul = dir_linha.ESQ
+    #dar_ré(DIST_EIXO_SENSOR)
+    girar_orientação(+1)
+
+def alinhar_eixo_cruzamento():
+    rodas.reset()
+    achar_não_cruzamento()
+    if rodas.distance() == 0:
+        seguir_linha_até(até_dist_max(DIST_EIXO_SENSOR - TAM_FAIXA))
+    else:
+        seguir_linha_até(até_dist_max(DIST_EIXO_SENSOR - rodas.distance()))
 
 def alinha_parede(vel, vel_ang, giro_max=45,
                   func_cor_pista=Cor.area_livre,
@@ -768,8 +886,21 @@ def alinha_re(max_tentativas=3,
                 rodas.turn(ang)
     return extra
 
+def seguir_caminho_inclusivo(caminho):
+    cel_destino = caminho.pop(-1)
+    cel_final   = caminho[-1]
+
+    ## acerta orientação para como se tivesse andado tudo
+    restante = [cel_final, cel_destino]
+    _, ori_final = achar_movimentos(restante, orientação_estimada)
+
+    seguir_caminho(caminho)
+    LOG("seguir_caminho_inclusivo: acertar_orientação_linha")
+    acertar_orientação_linha(ori_final)
+
 def seguir_caminho(caminho): #! lidar com outras coisas
-    def interpretar_movimento_livre(mov):
+    def interpretar_movimento_livre(i, movs):
+        mov = movs[i]
         #! fazer run length encoding aqui
         if   mov == tipo_movimento.FRENTE:
             rodas.straight(TAM_BLOCO, then=Stop.COAST)
@@ -787,31 +918,47 @@ def seguir_caminho(caminho): #! lidar com outras coisas
         elif mov == tipo_movimento.DIREITA:
             virar_direita()
 
-    def interpretar_movimento_cidade(mov):
+    def interpretar_movimento_cidade(i, movs):
         #! fazer run length encoding aqui
+        mov = movs[i]
         if   mov == tipo_movimento.FRENTE:
-            achar_cruzamento_linha(dist_max=TAM_BLOCO + 2*DIST_EIXO_SENSOR)
+            if movs[i+1:] and movs[i+1] == tipo_movimento.FRENTE:
+                achar_cruzamento_linha(dist_max=TAM_BLOCO + 2*DIST_EIXO_SENSOR)
+                rodas.reset()
+                achar_não_cruzamento(dist_max=TAM_BLOCO)
+                if movs[i+2:] and movs[i+2] != tipo_movimento.FRENTE:
+                    dar_ré(rodas.distance())
+            else:
+                achar_cruzamento_linha(dist_max=TAM_BLOCO + 2*DIST_EIXO_SENSOR)
         elif mov == tipo_movimento.TRAS:
-            dar_meia_volta_linha()
-            achar_cruzamento_linha(dist_max=TAM_BLOCO + 2*DIST_EIXO_SENSOR)
+            if movs[i+1:] and movs[i+1] == tipo_movimento.FRENTE:
+                dar_meia_volta_linha()
+                achar_cruzamento_linha(dist_max=TAM_BLOCO + 2*DIST_EIXO_SENSOR)
+                achar_não_cruzamento()
+            else:
+                dar_meia_volta_linha()
+                achar_cruzamento_linha(dist_max=TAM_BLOCO + 2*DIST_EIXO_SENSOR)
         elif mov == tipo_movimento.ESQUERDA_FRENTE:
-            curva_linha_esquerda()
+            virar_esquerda_linha()
             achar_cruzamento_linha(dist_max=TAM_BLOCO + 2*DIST_EIXO_SENSOR)
         elif mov == tipo_movimento.DIREITA_FRENTE:
-            curva_linha_direita()
+            virar_direita_linha()
             achar_cruzamento_linha(dist_max=TAM_BLOCO + 2*DIST_EIXO_SENSOR)
         elif mov == tipo_movimento.ESQUERDA:
-            curva_linha_esquerda()
+            virar_esquerda_linha()
         elif mov == tipo_movimento.DIREITA:
-            curva_linha_direita()
+            virar_direita_linha()
 
     if na_grade: interpretar_movimento = interpretar_movimento_cidade
     else:        interpretar_movimento = interpretar_movimento_livre
 
     def interpretar_caminho(caminho): #! receber orientação?
-        for mov in caminho: #! yield orientação nova?
+        LOG(caminho)
+        #WAIT(2000)
+        for i, mov in enumerate(caminho): #! yield orientação nova?
             LOG(f"seguir_caminho: {tipo_movimento(mov)}")
-            interpretar_movimento(mov)
+            delay(0)
+            interpretar_movimento(i,caminho)
             yield rodas.distance()
 
     movs, ori_final = achar_movimentos(caminho, orientação_estimada)
@@ -821,8 +968,12 @@ def seguir_caminho(caminho): #! lidar com outras coisas
         for _ in interpretar_caminho(movs):
             while not rodas.done(): pass
 
-        if na_grade: acertar_orientação_linha(ori_final)
-        else:        acertar_orientação(ori_final)
+        #if na_grade:
+        #    LOG("Seguir caminho na grade-acertar_orientação_linha")
+        #    acertar_orientação_linha(ori_final)
+        #else:
+        #    LOG("Seguir caminho na grade-acertar_orientação_linha")
+        #    acertar_orientação(ori_final)
     else:
         pass #! falhar mais alto
 
@@ -842,16 +993,29 @@ def acertar_orientação(ori):
             LOG(f"{orientação_estimada=}, {ori=}")
             virar_direita()
 
-def acertar_orientação_linha(ori):
+def acertar_orientação_linha(ori): #! isso não deveria andar pra frente
     cardinais = ["N", "L", "S", "O"]
     idx_ori_final = cardinais.index(ori)
     idx_ori_atual = cardinais.index(orientação_estimada)
 
+    LOG("Me orientando para frente do cubo.")
+
     idx_diff = ((idx_ori_atual - idx_ori_final) % len(cardinais)) - 2
-    if idx_diff == -2: return
-    if idx_diff == -1: curva_linha_esquerda()
-    if idx_diff ==  0: dar_meia_volta_linha()
-    if idx_diff ==  1: curva_linha_direita()
+    if idx_diff == -2:
+        LOG("Cubo na minha frente")
+        achar_não_cruzamento()
+        andar_dist_linha(TAM_BLOCO - DIST_EIXO_SENSOR - TAM_SENSOR_FRONTAL - TAM_CUBO/2)
+    if idx_diff == -1:
+        LOG("Fazendo curva esquerda para pegar cubo.")
+        virar_esquerda_linha()
+        andar_dist_linha(TAM_BLOCO - (2 * DIST_EIXO_SENSOR) - TAM_SENSOR_FRONTAL - TAM_CUBO/2)
+    if idx_diff ==  0:
+        LOG("Dando meia volta para pegar cubo.")
+        dar_meia_volta_linha()
+    if idx_diff ==  1:
+        LOG("Fazendo curva direita para pegar cubo.")
+        virar_direita_linha()
+        andar_dist_linha(TAM_BLOCO - (2 * DIST_EIXO_SENSOR) - TAM_SENSOR_FRONTAL - TAM_CUBO/2)
 
 def posicionamento_inicial():
     global orientação_estimada
@@ -983,7 +1147,7 @@ def partial(func, *args, **kwargs):
 
 #! tá empurrando?
 def procura(pos_estimada, cores_caçambas):
-    ## ordena as célular incertas por distância à origem
+    ## ordena as células incertas por distância à origem
     cel_incertas = pegar_celulas_incertas()
     cel_atual = pos_estimada
 
@@ -1009,14 +1173,7 @@ def procura(pos_estimada, cores_caçambas):
             continue
 
         ## anda até ficar imediatamente antes da celula destino
-        caminho.pop(-1)
-        seguir_caminho(caminho)
-        cel_atual = caminho[-1]
-
-        ## acerta orientação para como se tivesse andado tudo
-        restante = [cel_atual, cel_destino]
-        _, ori_final = achar_movimentos(restante, orientação_estimada)
-        acertar_orientação_linha(ori_final)
+        seguir_caminho_inclusivo(caminho)
 
         ## vê se tem alguma coisa na frente
         # chega mais perto do cubo
@@ -1160,7 +1317,7 @@ if __name__ == "__main__":
             bipes.cabeca()
             conta_reset += 1
 
-            wait(300)
+            delay(300)
             bots = set()
             while BOTÃO_CONTINUA not in bots:
                 bots = hub.buttons.pressed()
