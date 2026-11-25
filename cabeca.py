@@ -11,7 +11,7 @@ from lib.caminhos import coloca_obstaculo, tira_obstaculo
 from lib.caminhos import imprimir_mapa, heuristica
 from lib.caminhos import MAPA_X_MAX, MAPA_Y_MAX
 
-from lib.grafo import achar_caminhos, pegar_celulas_incertas_alcancaveis
+from lib.grafo import achar_caminhos, pegar_celulas_incertas_alcancaveis, construir_grafo, mapa
 
 from urandom import choice
 
@@ -1282,8 +1282,10 @@ def partial(func, *args, **kwargs):
 
 #! tá empurrando?
 def procura(pos_estimada, cores_caçambas):
+    grafo = construir_grafo(mapa)
+
     ## ordena as célular incertas por distância à origem
-    cel_incertas = pegar_celulas_incertas_alcancaveis(pos_estimada)
+    cel_incertas = pegar_celulas_incertas_alcancaveis(grafo, pos_estimada)
     cel_atual = pos_estimada
 
     ## garra
@@ -1294,7 +1296,7 @@ def procura(pos_estimada, cores_caçambas):
     while cel_incertas:
         candidatas = sorted(cel_incertas, key=lambda c: heuristica(cel_atual, c))[:3]
         caminhos_incertas = {
-            cel: achar_caminhos(cel_atual, cel, orientação_estimada) for cel in candidatas
+            cel: achar_caminhos(grafo, cel_atual, cel, orientação_estimada) for cel in candidatas
         }
         candidatas.sort(key=lambda x: (
             len(caminhos_incertas[x]) if caminhos_incertas[x] is not None else 9000

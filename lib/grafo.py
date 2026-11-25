@@ -151,18 +151,6 @@ def construir_grafo(mapa):
 
     return grafo
 
-#def custo_transicao(atual, vizinho): #! ver se vai precisar
-#    datual = Noh.DIR[atual.direcao]
-#    i1, j1 = Noh.DIR[vizinho.direcao]
-#
-#    if atual.posicao != vizinho.posicao:
-#        if datual == ( i1,  j1): return 0
-#        if datual == (-i1, -j1): return 2*PESO_GIRO # 180º
-#        
-#        return PESO_GIRO # 90º
-#    else:
-#        return PESO_RETA_BLOCO
-
 def escolher_caminho(grid, grafo, src, dest, orientacao, estrategia='dijkstra'):
     ok = True
 
@@ -225,7 +213,7 @@ def escolher_caminho(grid, grafo, src, dest, orientacao, estrategia='dijkstra'):
                 pais[vizinho] = nó_atual
                 fronteira.add(vizinho, novo_custo)
     return None
-   
+
 def tracar_caminho(pai, atual, src):
     caminho = []
 
@@ -244,10 +232,10 @@ def tracar_caminho(pai, atual, src):
 
     return caminho_sem_repetir
 
-def achar_caminhos(src, dest, orientacao):
+def achar_caminhos(grafo, src, dest, orientacao):
     return escolher_caminho(mapa, grafo, src, dest, orientacao)
 
-def celulas_alcancaveis(src):
+def celulas_alcancaveis(grafo, src):
     visitados = []
     pos_alcançáveis = {src}
 
@@ -269,14 +257,13 @@ def celulas_alcancaveis(src):
 
     return pos_alcançáveis
 
-def pegar_celulas_incertas_alcancaveis(src):
+def pegar_celulas_incertas_alcancaveis(grafo, src):
     cel_incertas = pegar_celulas_incertas()
 
-    alcancaveis = celulas_alcancaveis(src)
+    alcancaveis = celulas_alcancaveis(grafo, src)
 
     cel_incertas = [cel for cel in cel_incertas
                     if cel in alcancaveis]
     return cel_incertas
 
-grafo = construir_grafo(mapa)
 
