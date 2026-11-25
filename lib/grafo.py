@@ -138,10 +138,22 @@ def construir_grafo(mapa):
             for nó in subnós: grafo.add(nó)
 
             if isinstance(celula, Cruz):
-                for n1, n2 in zip(subnós[1:], [*subnós[:1], subnós[0]]):
-                    grafo.connect(n1.key, n2.key, peso=PESO_GIRO)
-                    grafo.connect(n2.key, n1.key, peso=PESO_GIRO)
-
+              #  for n1, n2 in zip(subnós[1:], [*subnós[:1], subnós[0]]):
+              #      grafo.connect(n1.key, n2.key, peso=PESO_GIRO)
+              #      grafo.connect(n2.key, n1.key, peso=PESO_GIRO)
+                # for n, n1 in enumerate(subnós):
+                #    for n2 in subnós[n+1:]:
+                #        grafo.connect(n1.key, n2.key, peso=PESO_GIRO)
+                #        grafo.connect(n2.key, n1.key, peso=PESO_GIRO)
+                k = len(direcoes)
+                for m in range(k):
+                    for n in range(k):
+                       n1 = subnós[m]
+                       n2 = subnós[n]
+                       if(m!=n and (m+n)%2!=0):
+                           grafo.connect(n1.key, n2.key, peso=PESO_GIRO)
+                           grafo.connect(n2.key, n1.key, peso=PESO_GIRO)
+            
             for nó in subnós:
                 if prox := nó_a_direção(mapa, nó.posicao, nó.direcao):
                     arestas_sobrando.append((nó.key, (prox, nó.direcao)))
@@ -260,7 +272,8 @@ def celulas_alcancaveis(src):
         pos_alcançáveis.add(atual.posicao)
 
         for vizinho in atual.adj:
-            if vizinho not in visitados:
+           # if celula_ocupada(mapa, vizinho.posicao): continue
+            if vizinho not in visitados: 
                 fronteira.add(vizinho, 0)
 
     return pos_alcançáveis
