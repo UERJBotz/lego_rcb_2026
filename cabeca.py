@@ -667,7 +667,10 @@ def achar_não_verde_alinhado(*args, **kwargs):
     return alinhar(*args, **kwargs)
 
 def até_cruzamento(dist, esq, centro, dir, preto):
-    return preto(esq) and preto(dir)
+    return (preto(esq) and preto(dir)) or (
+        sensor_cor_esq.color() == Color.BLUE and
+        sensor_cor_dir.color() == Color.BLUE
+    )
 
 def até_dist_max(dist_max):
     def func(dist, esq, centro, dir, preto):
@@ -1143,7 +1146,18 @@ def colocar_cubo_na_caçamba(cor_cubo, max_cubos=NUM_CUBOS_PEGÁVEIS):
 
             achar_não_verde_alinhado(max_tentativas=5, virar=False)
 
+            LOG(f"colocar_cubo_na_caçamba: retraindo plataforma")
+            blt.retrair_plataforma()
+            LOG(f"colocar_cubo_na_caçamba: estendendo plataforma")
+            blt.estender_plataforma()
+            LOG(f"colocar_cubo_na_caçamba: garra")
+            blt.mediar_garra()
+            blt.fechar_garra()
+            blt.levantar_garra()
+            blt.retrair_plataforma()
+
             rodas.straight(DIST_VERDE_CAÇAMBA)
+
             blt.mediar_garra()
             blt.abrir_garra()
 
@@ -1193,7 +1207,12 @@ def verificar_aresta(dist_cubo_perto=TAM_BLOCO, dist_max=TAM_QUARTEIRÃO, dist_m
                 LOG(f"verificar_aresta: viu cor.{Cor(cor)}")
                 blt.abaixar_garra()
                 blt.fechar_garra()
+                blt.levantar_garra()
+                blt.estender_plataforma()
                 blt.mediar_garra()
+                blt.abrir_garra()
+                blt.levantar_garra()
+                blt.sacodir_plataforma()
                 cubos_no_robo[0] = cor #! Mudar a logica do 0 ao pegar dois cubos.
                 blt.mostrar_cubos(cubos_no_robo)
 
