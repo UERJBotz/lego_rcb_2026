@@ -32,7 +32,7 @@ class TCS34725:
 
     def hsv(self): return self._rgbc_to_hsv(self.rgbc())
 
-    def cor(self, cacamba = False): return self._classificar_cor(self.hsv(), cacamba)
+    def cor(self, cacamba = False): return self._classificar_cor(self.hsv(), self.rgbc(), cacamba)
 
     def _read_crgb(self):
         return struct.unpack("<HHHH", self._read_bytes(self.CDATAL, 2*4))
@@ -64,42 +64,20 @@ class TCS34725:
         return (int(h), int(s), int(v))
 
     @staticmethod
-    def _classificar_cor(hsv: tuple, cacamba) -> cor:
+    def _classificar_cor(hsv: tuple,rgbc: tuple, cacamba) -> cor:
         h, s, v = hsv
+	r, g, b, c = rgbc
         if cacamba:
             if (s <= 75 and v <= 120): return cor.PRETO
+	    if (h >= 20 and h <= 50) and (s <= 130):    return cor.MARROM
         else:
-            if (h >= 50 and h <= 91) and (v >= 90 and v <= 96): return cor.BRANCO
-            if (h >= 30 and h <= 150) and (s <= 110 and v <= 110): return cor.PRETO
+            if (s <= 97 and v >= 96 and c >= 2500): return cor.BRANCO
+            if (s <= 102 and v <= 150 and c<=510): return cor.PRETO
+            if (h >= 20 and h <= 100) and (s <= 130):   return cor.MARROM
 
-        if (h >= 20 and h <= 50) and (s <= 130):            return cor.MARROM
         if (h >= 0 and h <= 10) or (h >= 330 and h <= 360): return cor.VERMELHO
-
         if (h >= 20  and h <= 60):  return cor.AMARELO
         if (h >= 60  and h <= 150): return cor.VERDE
         if (h >= 180 and h <= 260): return cor.AZUL
 
         return cor.NENHUMA
-        
-# class intervalo_hsv:
-#     def range(m=None, M=None, /, *, sup=1000):
-#         if m is None: return range(0, sup+1)
-#         if M is None: return range(0,   m+1)
-#         else:         return range(m,   M+1)
-# 
-#     def __init__(self, h=None, s=None, v=None):
-#         self.h = self.range(*h) if h else self.range()
-#         self.s = self.range(*s) if s else self.range()
-#         self.v = self.range(*v) if v else self.range()
-# 
-#     def __contains__(self, hsv):
-#         h, s, v = hsv
-#         return (
-#             (h in self.h) and (s in self.s) and (v in self.v)
-#         )
-# 
-# if hsv in mapa[cor.PRETO]: return cor.PRETO
-# 
-# mapa = {
-#     cor.PRETO: intervalo_hsv(s=(75), v=(120)),
-# }
