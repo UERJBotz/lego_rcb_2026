@@ -82,6 +82,11 @@ def tira_obstaculo(pos):
     if cel.mutável: #! falhar mais alto
         cel.estado = estado_celula.LIVRE
 
+def coloca_obstaculo_incerto(pos):
+    y, x = pos; cel = mapa[y][x]
+    if cel.mutável: #! falhar mais alto
+        cel.estado = estado_celula.INCERTO
+
 def imprimir_mapa(matriz=mapa):
     """Imprime a matriz de forma alinhada."""
     largura_maxima = 12

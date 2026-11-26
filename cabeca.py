@@ -7,7 +7,7 @@ from pybricks.tools      import wait as delay
 from pybricks.robotics   import DriveBase
 
 from lib.caminhos import achar_movimentos, achar_caminhos, tipo_movimento
-from lib.caminhos import coloca_obstaculo, tira_obstaculo
+from lib.caminhos import coloca_obstaculo, tira_obstaculo, coloca_obstaculo_incerto
 from lib.caminhos import pegar_celulas_incertas, imprimir_mapa
 from lib.caminhos import MAPA_X_MAX, MAPA_Y_MAX
 
@@ -65,7 +65,9 @@ DISTS_CAÇAMBAS = [ DIST_BORDA_CAÇAMBA +
                    for i in range(NUM_CAÇAMBAS) ]
 cubos_caçambas = [0 for i in range(NUM_CAÇAMBAS)]
 cores_caçambas = []
-cubos_no_robo = [Cor.NENHUMA,Cor.NENHUMA]
+
+cores_cubos_pegos = [Cor.NENHUMA,Cor.NENHUMA]
+pos_cubos_pegos  = [None, None]
 
 
 #! 2024: checar stall: jogar exceção
@@ -147,6 +149,10 @@ def main():
 
         dir_linha.mul = dir_linha.DIR
         while False:
+            LOG("main: varrendo: zerando cubos pegos")
+            cores_cubos_pegos[:] = [Cor.NENHUMA, Cor.NENHUMA]
+            pos_cubos_pegos[:] = [None, None]
+
             LOG(f"main: varrendo: quarteirão {quarteirão_atual}")
 
             achar_não_verde_alinhado()
@@ -186,6 +192,10 @@ def main():
                 dar_ré_meio_quarteirão()
             pos_estimada = (y, 0)
         else:
+            LOG("main: procurando: zerando cubos pegos")
+            cores_cubos_pegos[:] = [Cor.NENHUMA, Cor.NENHUMA]
+            pos_cubos_pegos[:] = [None, None]
+
             LOG("main: procurando")
             achar_não_verde_alinhado()
             rodas.straight(DIST_EIXO_SENSOR)
@@ -283,8 +293,8 @@ def test():
         blt.fechar_garra()
 
     if False:
-        cubos_no_robo = [Cor.VERDE,Cor.AZUL]
-        blt.mostrar_cubos(cubos_no_robo)
+        cores_cubos_pegos = [Cor.VERDE,Cor.AZUL]
+        blt.mostrar_cubos(cores_cubos_pegos)
 
     if False: testes.imprimir_cor_cubo_para_sempre()
     if False: testes.imprimir_cor_caçamba_para_sempre()
@@ -359,10 +369,8 @@ def test():
         blt.retrair_plataforma()
         bipes.separador()
 
-# Logica colocar um cubo na plataforma.
-
-
     if True:
+        # Logica colocar um cubo na plataforma.
         LOG("retrai_plataforma")
         blt.retrair_plataforma()
         bipes.separador()
@@ -378,12 +386,10 @@ def test():
         bipes.separador()
         blt.mediar_garra()
         blt.abrir_garra()
-        blt.levantar_garra()      
-
-# Logica colocar um cubo na plataforma.  
+        blt.levantar_garra()
 
     if False:
-        #Logica colocar um cubo na plataforma.
+        # Logica colocar um cubo na plataforma.
         LOG("retrai_plataforma")
         blt.retrair_plataforma()
         bipes.separador()
@@ -410,7 +416,6 @@ def test():
         blt.retrair_plataforma()
         blt.sacodir_plataforma(2)
         bipes.separador()
-
 
         #Colocou um cubo na plataforma.
 
@@ -1213,8 +1218,6 @@ def verificar_aresta(dist_cubo_perto=TAM_BLOCO, dist_max=TAM_QUARTEIRÃO, dist_m
                 blt.abrir_garra()
                 blt.levantar_garra()
                 blt.sacodir_plataforma()
-                cubos_no_robo[0] = cor #! Mudar a logica do 0 ao pegar dois cubos.
-                blt.mostrar_cubos(cubos_no_robo)
 
                 achar_cruzamento_linha(dist_max=dist_max-rodas.distance())
                 return True, cor
@@ -1262,6 +1265,10 @@ def atravessa_rua_pegando_cubo_ou_nao(aresta, dist_max=TAM_QUARTEIRÃO):
     if passa:
         # cubo ou nada
         _tira_obstaculo(aresta)
+        cores_cubos_pegos[0] = cor                   #! Mudar a logica do 0 ao pegar dois cubos.
+        pos_cubos_pegos[0] = aresta_como_pos(aresta) #! Mudar a logica do 0 ao pegar dois cubos.
+        LOG("atravessa_rua_pegando_cubo_ou_nao: {Cor(cores_cubos_pegos[0], pos_cubos_pegos[0]}")
+        blt.mostrar_cubos(cores_cubos_pegos)
         return cor, fim
     else:
         # obstáculo
@@ -1441,6 +1448,11 @@ if __name__ == "__main__":
                 if Button.BLUETOOTH in bots: pass
 
             LOG("reiniciando")
+            for pos, cor in zip(pos_cubos_pegos, cores_cubos_pegos):
+                if cor != Cor.NENHUMA:
+                    coloca_obstaculo_incerto(pos) #!!!!!!!!!!!!!!!!!!
+                    imprimir_mapa()
+
             hub.system.set_stop_button(Button.CENTER)
             continue
         except Exception as e:
