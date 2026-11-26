@@ -13,9 +13,9 @@ all: cabeca braco
 
 #! colocar os outros módulos como dependência
 cabeca: cabeca.py
-	$(PYBRICKS) run ble --name $(NOME_CABECA) $<
+	$(PYTHON) build/upload.py $(NOME_CABECA) $<
 braco:  braco.py
-	$(PYBRICKS) run ble --name $(NOME_BRACO) $<
+	$(PYTHON) build/upload.py $(NOME_BRACO) $<
 
 
 .PHONY: imediato cabeca_imediato braco_imediato
@@ -34,9 +34,9 @@ TESTE_BRACO  = "__teste_braco__.py"
 TESTE_CABECA = "__teste_cabeca__.py"
 
 cabeca_teste: $(TESTE_CABECA)
-	$(PYBRICKS) run ble --name $(NOME_CABECA) $<
+	$(PYTHON) build/upload.py $(NOME_CABECA) $<
 braco_teste:  $(TESTE_BRACO)
-	$(PYBRICKS) run ble --name $(NOME_BRACO) $<
+	$(PYTHON) build/upload.py $(NOME_BRACO) $<
 
 $(TESTE_CABECA): cabeca.py
 	echo "TESTE = True; DEBUG = True" > $@; cat $< >> $@
@@ -52,6 +52,12 @@ rabo:: rabo_principais
 rabo:: cores.py
 	$(AMPY) --port /dev/ttyUSB0 put $<
 rabo:: lib/polyfill.py
+	$(AMPY) --port /dev/ttyUSB0 put $< $<
+rabo:: lib/__init__.py
+	$(AMPY) --port /dev/ttyUSB0 put $< $<
+rabo:: lib/caminhos.py
+	$(AMPY) --port /dev/ttyUSB0 put $< $<
+rabo:: lib/grafo.py
 	$(AMPY) --port /dev/ttyUSB0 put $< $<
 rabo:: firmware/tcs3472.py
 	$(AMPY) --port /dev/ttyUSB0 put $<

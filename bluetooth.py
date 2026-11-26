@@ -1,7 +1,10 @@
 from comum import globais
 from comum import LOG, ASSERT
 
-from pybricks.tools import wait
+try:
+    from pybricks.tools import wait
+except ImportError:
+    from time import sleep_ms as wait
 
 from lib.polyfill import Enum
 try: #!
@@ -34,6 +37,9 @@ cmd = Enum("cmd", [
     "mostra_caçambas",
     "sacode_plataforma",
     "mostra_cubos",
+    "pegar_cel_incertas",
+    "procurar_caminhos",
+    "atualizar_celula",
 ])
 
 rsp = Enum("rsp", [
@@ -54,6 +60,9 @@ rsp = Enum("rsp", [
     "mostrei_caçambas",
     "sacodi",
     "mostrei_cubos",
+    "peguei",
+    "procurei",
+    "atualizei_celula",
 ])
 
 #! mudar alguns nomes depois
@@ -153,3 +162,69 @@ def mostrar_cubos(cubos):
 def sacodir_plataforma(num_sacudidas=3):
     enviar_comando(cmd.sacode_plataforma, num_sacudidas)
     return esperar_resposta(rsp.sacodi)
+
+def pegar_cel_incertas(pos_estimada):
+    enviar_comando(cmd.pegar_cel_incertas, *pos_estimada)
+    return esperar_resposta(rsp.peguei, canal=TX_RABO)
+
+def atualizar_celula(pos, ocupada):
+    enviar_comando(cmd.atualizar_celula, pos[0], pos[1], bool(ocupada))
+    return esperar_resposta(rsp.atualizei_celula, canal=TX_RABO)
+
+def codificar_caminho(caminho, destino):
+    rota = list(caminho) + [destino]
+    direcoes = {
+        (-1, 0): 0,
+        (1, 0): 1,
+        (0, 1): 2,
+        (0, -1): 3,
+    }
+    movimentos = []
+
+    for atual, proximo in zip(rota, rota[1:]):
+        delta = (proximo[0] - atual[0], proximo[1] - atual[1])
+        movimentos.append(direcoes[delta])
+
+    if len(movimentos) > 84:
+        return bytes((2,))
+
+    compactado = bytearray((len(movimentos) + 3) // 4)
+    for indice, direcao in enumerate(movimentos):
+        compactado[indice // 4] |= direcao << ((indice % 4) * 2)
+
+    return bytes((1, len(movimentos))) + bytes(compactado)
+
+def decodificar_caminho(pos_atual, dados):
+    if not dados or dados[0] == 0:
+        return None
+    if dados[0] == 2:
+        raise ValueError("caminho grande demais para uma mensagem BLE")
+    if dados[0] != 1 or len(dados) < 2:
+        raise ValueError("resposta de caminho inválida")
+
+    num_movimentos = dados[1]
+    compactado = dados[2:]
+    if len(compactado) != (num_movimentos + 3) // 4:
+        raise ValueError("resposta de caminho truncada")
+
+    deltas = ((-1, 0), (1, 0), (0, 1), (0, -1))
+    caminho = [pos_atual]
+    linha, coluna = pos_atual
+    for indice in range(num_movimentos):
+        direcao = (compactado[indice // 4] >> ((indice % 4) * 2)) & 3
+        delta_linha, delta_coluna = deltas[direcao]
+        linha += delta_linha
+        coluna += delta_coluna
+        caminho.append((linha, coluna))
+
+    return pos_atual, caminho[-1], caminho[:-1]
+
+def procurar_caminhos(pos_atual, orientação_estimada):
+    enviar_comando(
+        cmd.procurar_caminhos,
+        pos_atual[0],
+        pos_atual[1],
+        orientação_estimada,
+    )
+    dados = esperar_resposta(rsp.procurei, canal=TX_RABO)
+    return decodificar_caminho(pos_atual, dados)

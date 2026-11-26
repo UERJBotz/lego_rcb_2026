@@ -1,4 +1,5 @@
 import blt
+import gc
 
 from time import ticks_ms as millis, sleep_ms as delay
 from machine import I2C, SoftI2C, Pin, PWM
@@ -11,9 +12,25 @@ from lib.polyfill import Enum
 
 from comum import globais, coringa
 from comum import LOG, ERRO, ASSERT
+from lib.caminhos import (
+    estado_celula,
+    heuristica,
+    coloca_obstaculo,
+    tira_obstaculo,
+)
+from lib.grafo import (
+    achar_caminhos,
+    construir_grafo,
+    mapa,
+    pegar_celulas_incertas_alcancaveis,
+)
 
 ANG_GARRA_FECHADA = 90
 ANG_GARRA_ABERTA  = 0
+
+grafo = None
+cel_incertas = []
+cel_atual = None
 
 #! from cores import cor as Cor
 Cor = Enum("Cor", ["NENHUMA",
@@ -162,8 +179,55 @@ def setup():
     timer = millis()
     return hub
 
+def pegar_cel_incertas(pos_estimada):
+    global grafo, cel_incertas, cel_atual
+    grafo = None
+    gc.collect()
+    grafo = construir_grafo(mapa)
+    cel_incertas = pegar_celulas_incertas_alcancaveis(grafo, pos_estimada)
+    cel_atual = pos_estimada
+
+def procurar_caminhos(pos_estimada, orientação_estimada):
+    global cel_incertas, cel_atual
+    tira_obstaculo(pos_estimada)
+    cel_atual = pos_estimada
+    cel_incertas = [
+        cel for cel in cel_incertas
+        if mapa[cel[0]][cel[1]].estado == estado_celula.INCERTO
+    ]
+    if not cel_incertas:
+        return None
+
+    cel_incertas.sort(key=lambda cel: heuristica(cel_atual, cel))
+    caminhos = {
+        cel: achar_caminhos(grafo, cel_atual, cel, orientação_estimada)
+        for cel in cel_incertas
+    }
+    cel_incertas.sort(
+        key=lambda cel: len(caminhos[cel]) if caminhos[cel] is not None else 9000
+    )
+
+    destino = cel_incertas.pop(0)
+    caminho = caminhos[destino]
+    if not caminho:
+        LOG("procura: nenhum caminho encontrado")
+        return None
+
+    caminho.pop(-1)
+    return cel_atual, destino, caminho
+
+def atualizar_estado_celula(pos, ocupada):
+    if ocupada:
+        coloca_obstaculo(pos)
+    else:
+        tira_obstaculo(pos)
+    if pos in cel_incertas:
+        cel_incertas.remove(pos)
+
 def main(hub):
     global timer
+    ultima_requisicao_grafo = None
+    resposta_grafo = None
 
     cmd = None
     cor_caçamba = cor_garra = 0
@@ -193,6 +257,10 @@ def main(hub):
 
         if cmd != antes:
             LOG(f"{blt.cmd(comando)}{args}")
+
+        if comando not in (blt.cmd.pegar_cel_incertas, blt.cmd.procurar_caminhos):
+            ultima_requisicao_grafo = None
+            resposta_grafo = None
 
         if   comando == blt.cmd.ver_cor_sensor_caçamba:
             blt.enviar_resposta(blt.rsp.cor_sensor_caçamba, cor_caçamba)
@@ -229,6 +297,34 @@ def main(hub):
                 barra_led.write()
                 LOG(f"mostrando cubo {i} com cor {Cor(cor)}")
             blt.enviar_resposta(blt.rsp.mostrei_cubos)
+
+        elif comando == blt.cmd.pegar_cel_incertas:
+            requisicao = tuple(cmd)
+            if requisicao != ultima_requisicao_grafo:
+                linha, coluna = args
+                pegar_cel_incertas((linha, coluna))
+                ultima_requisicao_grafo = requisicao
+                resposta_grafo = (blt.rsp.peguei,)
+            blt.enviar_resposta(*resposta_grafo)
+        elif comando == blt.cmd.procurar_caminhos:
+            requisicao = tuple(cmd)
+            if requisicao != ultima_requisicao_grafo:
+                linha, coluna, orientação_estimada = args
+                resultado = procurar_caminhos(
+                    (linha, coluna), orientação_estimada
+                )
+                if resultado is None:
+                    dados = bytes((0,))
+                else:
+                    _, destino, caminho = resultado
+                    dados = blt.codificar_caminho(caminho, destino)
+                ultima_requisicao_grafo = requisicao
+                resposta_grafo = (blt.rsp.procurei, dados)
+            blt.enviar_resposta(*resposta_grafo)
+        elif comando == blt.cmd.atualizar_celula:
+            linha, coluna, ocupada = args
+            atualizar_estado_celula((linha, coluna), ocupada)
+            blt.enviar_resposta(blt.rsp.atualizei_celula)
 
 
 

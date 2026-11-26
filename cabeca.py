@@ -11,8 +11,6 @@ from lib.caminhos import coloca_obstaculo, tira_obstaculo
 from lib.caminhos import imprimir_mapa, heuristica
 from lib.caminhos import MAPA_X_MAX, MAPA_Y_MAX
 
-from lib.grafo import achar_caminhos, pegar_celulas_incertas_alcancaveis, construir_grafo, mapa
-
 from urandom import choice
 
 import bluetooth as blt
@@ -218,12 +216,12 @@ def test():
         BOTÕES_DESLIGA = {Button.CENTER}
 
     if True:
-        if False: tira_obstaculo((0,2))
-        if False: tira_obstaculo((0,4))
-        if False: tira_obstaculo((1,5))
-        if False: tira_obstaculo((2,4))
-        if False: tira_obstaculo((3,3))
-        if False: tira_obstaculo((4,4))
+        if False: atualizar_estado_celula((0,2), False)
+        if False: atualizar_estado_celula((0,4), False)
+        if False: atualizar_estado_celula((1,5), False)
+        if False: atualizar_estado_celula((2,4), False)
+        if False: atualizar_estado_celula((3,3), False)
+        if False: atualizar_estado_celula((4,4), False)
 
         if True:
             cores_caçambas = [
@@ -1236,10 +1234,10 @@ def atravessa_rua_pegando_cubo_ou_nao(aresta, dist_max=TAM_QUARTEIRÃO):
         return (n1[0]+n2[0])//2, (n1[1]+n2[1])//2
     def _tira_obstaculo(aresta): #!
         LOG(f"Tirei obstaculo da aresta {aresta}.")
-        tira_obstaculo(aresta_como_pos(aresta))
+        atualizar_estado_celula(aresta_como_pos(aresta), False)
     def _coloca_obstaculo(aresta): #!
         LOG(f"Coloquei obstaculo na aresta {aresta}")
-        coloca_obstaculo(aresta_como_pos(aresta))
+        atualizar_estado_celula(aresta_como_pos(aresta), True)
 
     passa, cor = verificar_aresta(dist_max=dist_max)
     ini, fim = aresta
@@ -1280,12 +1278,16 @@ def varredura(pos_estimada, caçambas):
 def partial(func, *args, **kwargs):
     return lambda *a, **kw: func(*args, *a, **kwargs, **kw)
 
+def atualizar_estado_celula(pos, ocupada):
+    if ocupada:
+        coloca_obstaculo(pos)
+    else:
+        tira_obstaculo(pos)
+    blt.atualizar_celula(pos, ocupada)
+
 #! tá empurrando?
 def procura(pos_estimada, cores_caçambas):
-    grafo = construir_grafo(mapa)
-
-    ## ordena as célular incertas por distância à origem
-    cel_incertas = pegar_celulas_incertas_alcancaveis(grafo, pos_estimada)
+    blt.pegar_cel_incertas(pos_estimada)
     cel_atual = pos_estimada
 
     ## garra
@@ -1293,22 +1295,11 @@ def procura(pos_estimada, cores_caçambas):
     blt.mediar_garra()
     blt.abrir_garra()
 
-    while cel_incertas:
-        candidatas = sorted(cel_incertas, key=lambda c: heuristica(cel_atual, c))[:3]
-        caminhos_incertas = {
-            cel: achar_caminhos(grafo, cel_atual, cel, orientação_estimada) for cel in candidatas
-        }
-        candidatas.sort(key=lambda x: (
-            len(caminhos_incertas[x]) if caminhos_incertas[x] is not None else 9000
-        ))
-
-        cel_destino = candidatas[0]
-        cel_incertas.remove(cel_destino)
-        caminho = caminhos_incertas[cel_destino]
-
-        if not caminho:
-            LOG("procura: nenhum caminho encontrado")
-            continue
+    while True:
+        chave_caminho = blt.procurar_caminhos(cel_atual, orientação_estimada)
+        if chave_caminho is None: return None
+        cel_atual, cel_destino, caminho = chave_caminho
+        if caminho is None: continue
 
         ## anda até ficar imediatamente antes de procurates da celula destino
         (y0,x0) = seguir_caminho_inclusivo(caminho)
@@ -1323,6 +1314,50 @@ def procura(pos_estimada, cores_caçambas):
         imprimir_mapa()
 
         LOG(f"procura: cubo cor {cor}")
+        #! fazer igual isso na varredura (colocar em função)
+        #! colocar pra dizer que é a cor do cubo de cima ou de baixo
+        cor = blt.ver_cor_cubo()
+        if cor == Cor.enum.NENHUMA:
+            LOG("procura: cel livre viu cor.NENHUMA*")
+            atualizar_estado_celula(cel_destino, False)
+            achar_cruzamento_linha(dist_max=TAM_CUBO)
+            cel_atual = cel_destino
+            continue
+
+        def se_deixar_cubo(cor):
+            if cor == Cor.enum.BRANCO:
+                ASSERT(cor not in cores_caçambas, "NÃO TEM CAÇAMBA BRANCA!")
+                bipes.cabeca()
+            if cor not in cores_caçambas:
+                LOG(f"procura: cubo desconhecido cor {cor}")
+                return True
+            if cubos_caçambas[cores_caçambas.index(cor)] >= NUM_CUBOS_PEGÁVEIS:
+                LOG(f"procura: cubo caçamba cheia cor {cor}")
+                return True
+            return False
+
+        if se_deixar_cubo(cor): #! tirar a puxada do cubo
+            atualizar_estado_celula(cel_destino, True)
+            if DIST_VOLTAR_CUBO:
+                blt.abaixar_garra()
+                blt.fechar_garra()
+                dar_ré(DIST_VOLTAR_CUBO) #!
+                blt.abrir_garra();
+                blt.mediar_garra()
+            dar_ré(DIST_CRUZAMENTO_CUBO + DIST_EIXO_SENSOR)
+            cel_atual = cel_atual
+            continue
+        blt.abaixar_garra()
+        blt.fechar_garra()
+        blt.mediar_garra() #! levantar?
+        cubos_no_robo[0] = cor #! Mudar a logica do 0 ao pegar dois cubos.
+        blt.mostrar_cubos(cubos_no_robo)
+        LOG(f"Mostrando cubos")
+        imprimir_mapa()
+
+        LOG(f"procura: cubo cor {cor}")
+        atualizar_estado_celula(cel_destino, False)
+        dar_ré(DIST_CRUZAMENTO_CUBO + DIST_EIXO_SENSOR)
         return cor, cel_atual
 
     imprimir_mapa()
