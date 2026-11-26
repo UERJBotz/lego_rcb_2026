@@ -19,7 +19,7 @@ from lib.caminhos import (
     tira_obstaculo,
 )
 from lib.grafo import (
-    achar_caminhos,
+    achar_caminhos as achar_caminhos_grafo,
     construir_grafo,
     mapa,
     pegar_celulas_incertas_alcancaveis,
@@ -200,7 +200,7 @@ def procurar_caminhos(pos_estimada, orientação_estimada):
 
     cel_incertas.sort(key=lambda cel: heuristica(cel_atual, cel))
     caminhos = {
-        cel: achar_caminhos(grafo, cel_atual, cel, orientação_estimada)
+        cel: achar_caminhos_grafo(grafo, cel_atual, cel, orientação_estimada)
         for cel in cel_incertas
     }
     cel_incertas.sort(
@@ -215,6 +215,14 @@ def procurar_caminhos(pos_estimada, orientação_estimada):
 
     caminho.pop(-1)
     return cel_atual, destino, caminho
+
+def achar_caminho_bluetooth(src, dest, orientação_estimada):
+    global grafo
+    if grafo is None:
+        gc.collect()
+        grafo = construir_grafo(mapa)
+    tira_obstaculo(src)
+    return achar_caminhos_grafo(grafo, src, dest, orientação_estimada)
 
 def atualizar_estado_celula(pos, ocupada):
     if ocupada:
@@ -258,7 +266,11 @@ def main(hub):
         if cmd != antes:
             LOG(f"{blt.cmd(comando)}{args}")
 
-        if comando not in (blt.cmd.pegar_cel_incertas, blt.cmd.procurar_caminhos):
+        if comando not in (
+            blt.cmd.pegar_cel_incertas,
+            blt.cmd.procurar_caminhos,
+            blt.cmd.achar_caminhos,
+        ):
             ultima_requisicao_grafo = None
             resposta_grafo = None
 
@@ -320,6 +332,24 @@ def main(hub):
                     dados = blt.codificar_caminho(caminho, destino)
                 ultima_requisicao_grafo = requisicao
                 resposta_grafo = (blt.rsp.procurei, dados)
+            blt.enviar_resposta(*resposta_grafo)
+        elif comando == blt.cmd.achar_caminhos:
+            requisicao = tuple(cmd)
+            if requisicao != ultima_requisicao_grafo:
+                linha_src, coluna_src, linha_dest, coluna_dest, orientação_estimada = args
+                src = (linha_src, coluna_src)
+                dest = (linha_dest, coluna_dest)
+                caminho = achar_caminho_bluetooth(
+                    src, dest, orientação_estimada
+                )
+                if caminho is None:
+                    dados = bytes((0,))
+                elif caminho:
+                    dados = blt.codificar_caminho(caminho[:-1], caminho[-1])
+                else:
+                    dados = blt.codificar_caminho((), src)
+                ultima_requisicao_grafo = requisicao
+                resposta_grafo = (blt.rsp.achei_caminhos, dados)
             blt.enviar_resposta(*resposta_grafo)
         elif comando == blt.cmd.atualizar_celula:
             linha, coluna, ocupada = args

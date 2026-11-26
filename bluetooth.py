@@ -40,6 +40,7 @@ cmd = Enum("cmd", [
     "pegar_cel_incertas",
     "procurar_caminhos",
     "atualizar_celula",
+    "achar_caminhos",
 ])
 
 rsp = Enum("rsp", [
@@ -63,6 +64,7 @@ rsp = Enum("rsp", [
     "peguei",
     "procurei",
     "atualizei_celula",
+    "achei_caminhos",
 ])
 
 #! mudar alguns nomes depois
@@ -228,3 +230,27 @@ def procurar_caminhos(pos_atual, orientação_estimada):
     )
     dados = esperar_resposta(rsp.procurei, canal=TX_RABO)
     return decodificar_caminho(pos_atual, dados)
+
+def achar_caminhos(src, dest, orientação_estimada):
+    if src == dest:
+        return []
+
+    enviar_comando(
+        cmd.achar_caminhos,
+        src[0],
+        src[1],
+        dest[0],
+        dest[1],
+        orientação_estimada,
+    )
+    dados = esperar_resposta(rsp.achei_caminhos, canal=TX_RABO)
+    rota = decodificar_caminho(src, dados)
+    if rota is None:
+        return None
+
+    _, destino_recebido, caminho = rota
+    if destino_recebido != dest:
+        raise ValueError(
+            f"destino de caminho inesperado: {destino_recebido}, esperado {dest}"
+        )
+    return caminho + [dest]

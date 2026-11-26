@@ -18,6 +18,8 @@ class Noh:
     }
 
 class Node:
+    __slots__ = ("key", "adj")
+
     def __init__(self, key):
         self.key = key
         self.adj = []
@@ -26,26 +28,19 @@ class Node:
         self.adj.append(node)
 
 class Nó(Node):
-    def __init__(self, celula, posicao, direcao):
+    __slots__ = ("direcao", "posicao")
+
+    def __init__(self, posicao, direcao):
         super().__init__((posicao, direcao))
-        self.celula  = celula
         self.direcao = direcao
         self.posicao = posicao
-        self.vizinhos = []
-        # Cruz -> 4 nós
-        # Vert -> 2
-        # Hori -> 2
 
-class Aresta:
-    def __init__(self, ini, fim, peso):
-        self.ini = ini
-        self.fim = fim
-        self.peso = peso
 
 class Graph:
+    __slots__ = ("nós",)
+
     def __init__(self):
         self.nós = dict()
-        self.arestas = dict()
 
     def add(self, node):
         self.nós[node.key] = node #! sobrescreve
@@ -53,14 +48,15 @@ class Graph:
     def get(self, key):
         return self.nós.get(key)
 
-    def connect(self, ini, fim, peso=1):
+    def connect(self, ini, fim):
         self.nós[ini].connect(self.nós[fim])
-        self.arestas[ini, fim] = Aresta(ini, fim, peso)
 
     def peso(self, ini, fim):
-        return self.arestas[ini, fim].peso
+        return PESO_RETA_BLOCO
 
 class Grafo(Graph):
+    __slots__ = ()
+
     def get_by_pos(self, pos):
         return set(map(lambda x: x.key,
                    filter(lambda x: x is not None,
@@ -98,9 +94,7 @@ class FronteiraFila(FronteiraPrioridade):
 
     def remove(self):
         if self.empty(): return None
-        node = self.frontier[0]
-        self.frontier = self.frontier[1:]
-        return node
+        return self.frontier.pop(0)
 
 class FronteiraPilha(FronteiraFila):
     def remove(self):
@@ -125,7 +119,6 @@ def nó_a_direção(mapa, pos, direcao):
 
 def construir_grafo(mapa):
     grafo = Grafo()
-    arestas_sobrando = []
     for i in range(len(mapa)):
         for j in range(len(mapa[0])):
             celula = mapa[i][j]
@@ -134,20 +127,18 @@ def construir_grafo(mapa):
             elif isinstance(celula, Hori): direcoes = [Noh.LESTE, Noh.OESTE]
             else:                          direcoes = []
 
-            subnós = [Nó(celula, (i, j), d) for d in direcoes]
+            subnós = [Nó((i, j), d) for d in direcoes]
             for nó in subnós: grafo.add(nó)
 
             if isinstance(celula, Cruz):
                 for n1, n2 in zip(subnós, subnós[1:] + subnós[:1]):
-                    grafo.connect(n1.key, n2.key, peso=PESO_GIRO)
-                    grafo.connect(n2.key, n1.key, peso=PESO_GIRO)
+                    grafo.connect(n1.key, n2.key)
+                    grafo.connect(n2.key, n1.key)
 
-            for nó in subnós:
-                if prox := nó_a_direção(mapa, nó.posicao, nó.direcao):
-                    arestas_sobrando.append((nó.key, (prox, nó.direcao)))
-
-    for n1, n2 in arestas_sobrando:
-        grafo.connect(n1, n2, peso=PESO_RETA_BLOCO)
+    for nó in grafo.nós.values():
+        prox = nó_a_direção(mapa, nó.posicao, nó.direcao)
+        if prox is not None and grafo.get((prox, nó.direcao)) is not None:
+            grafo.connect(nó.key, (prox, nó.direcao))
 
     return grafo
 

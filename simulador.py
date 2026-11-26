@@ -90,6 +90,7 @@ def desenhar(lin=None, col=None):
     relogio.tick(60)
 
 DIRECOES = {(0, 1): 0, (1, 0): 90, (0, -1): 180, (-1, 0): -90}
+grafo = construir_grafo(mapa)
 
 def andar(caminho):
     global pos, passos, angulo, caminho_atual
@@ -144,12 +145,12 @@ def olhar(destino):
 
 def procura():
     cel_atual = pos
-    incertas = pegar_celulas_incertas_alcancaveis(pos)
+    incertas = pegar_celulas_incertas_alcancaveis(grafo, pos)
 
     while incertas:
         #candidatas = sorted(incertas, key=lambda c: heuristica(cel_atual, c))[:3]
         caminhos = {
-            cel: achar_caminhos(cel_atual, cel, ORIENTACOES[angulo%360]) for cel in incertas
+            cel: achar_caminhos(grafo, cel_atual, cel, ORIENTACOES[angulo%360]) for cel in incertas
         }
         incertas.sort(key=lambda x: (
             len(caminhos[x]) if caminhos[x] is not None else 9000
@@ -184,7 +185,7 @@ while CUBOS:
     destino = procura()
     if destino is None: break               
     na_garra = CUBOS.pop(destino)              
-    andar(achar_caminhos(pos, (0, 0), ORIENTACOES[angulo%360]))              
+    andar(achar_caminhos(grafo, pos, (0, 0), ORIENTACOES[angulo%360]))
     entregues.append(na_garra); na_garra = None
 
 print(f"terminou: {passos} passos, entregues: {entregues}")

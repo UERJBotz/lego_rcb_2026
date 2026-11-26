@@ -195,7 +195,13 @@ def main():
             cor, pos_estimada = procura(pos_estimada, cores_caçambas)
             LOG(f"main: tinha cubo {Cor(cor)} na frente de {pos_estimada}") #! LOG de procura antigo
 
-            caminho_volta = achar_caminhos(pos_estimada, (0,0), orientação_estimada)
+            caminho_volta = blt.achar_caminhos(
+                pos_estimada, (0,0), orientação_estimada
+            )
+            if caminho_volta is None:
+                raise RuntimeError(
+                    f"não há caminho de volta de {pos_estimada} até (0, 0)"
+                )
             LOG(f"main: caminho de volta: {caminho_volta}")
             seguir_caminho(caminho_volta)
             LOG(f"main: pulando o azul")
@@ -209,7 +215,7 @@ def test():
     global orientação_estimada, pos_estimada, na_grade, cores_caçambas
     ... # testar coisas aqui sem mudar o resto do código
 
-    blt.SILENCIOSO = True
+    blt.SILENCIOSO = False
 
     if True:
         global BOTÕES_DESLIGA
@@ -255,7 +261,7 @@ def test():
                     (6,6)]:
             tira_obstaculo(obs)
 
-        caminho = achar_caminhos((8,8), (6,6))
+        caminho = blt.achar_caminhos((8,8), (6,6), "L")
         seguir_caminho_inclusivo(caminho)
 
     while False:
