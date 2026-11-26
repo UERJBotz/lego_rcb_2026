@@ -22,7 +22,6 @@ from cores import Cor
 from comum import globais, bipes, luzes
 from comum import LOG, ERRO, ASSERT
 
-
 BOTÃO_PAUSA    = Button.CENTER
 BOTÃO_CONTINUA = Button.CENTER
 BOTÕES_DESLIGA = {Button.LEFT}
@@ -66,7 +65,6 @@ DISTS_CAÇAMBAS = [ DIST_BORDA_CAÇAMBA +
 cubos_caçambas = [0 for i in range(NUM_CAÇAMBAS)]
 cores_caçambas = []
 cubos_no_robo = [Cor.NENHUMA,Cor.NENHUMA]
-
 
 #! 2024: checar stall: jogar exceção
 #! 2024: checar cor errada no azul
@@ -958,11 +956,11 @@ def alinha_re(max_tentativas=3,
 def seguir_caminho_exclusivo(caminho, cel_destino):
     cel_final = caminho[-1]
 
+    seguir_caminho(caminho)
     ## acerta orientação para como se tivesse andado tudo
     restante = [cel_final, cel_destino]
     _, ori_final = achar_movimentos(restante, orientação_estimada)
 
-    seguir_caminho(caminho)
     LOG("seguir_caminho_exclusivo: acertar_orientação_linha")
     acertar_orientação_linha(ori_final)
     return cel_final
@@ -1314,49 +1312,6 @@ def procura(pos_estimada, cores_caçambas):
         imprimir_mapa()
 
         LOG(f"procura: cubo cor {cor}")
-        #! fazer igual isso na varredura (colocar em função)
-        #! colocar pra dizer que é a cor do cubo de cima ou de baixo
-        if cor == Cor.enum.NENHUMA:
-            LOG("procura: cel livre viu cor.NENHUMA*")
-            atualizar_estado_celula(cel_destino, False)
-            achar_cruzamento_linha(dist_max=TAM_CUBO)
-            cel_atual = cel_destino
-            continue
-
-        def se_deixar_cubo(cor):
-            if cor == Cor.enum.BRANCO:
-                ASSERT(cor not in cores_caçambas, "NÃO TEM CAÇAMBA BRANCA!")
-                bipes.cabeca()
-            if cor not in cores_caçambas:
-                LOG(f"procura: cubo desconhecido cor {cor}")
-                return True
-            if cubos_caçambas[cores_caçambas.index(cor)] >= NUM_CUBOS_PEGÁVEIS:
-                LOG(f"procura: cubo caçamba cheia cor {cor}")
-                return True
-            return False
-
-        if se_deixar_cubo(cor): #! tirar a puxada do cubo
-            atualizar_estado_celula(cel_destino, True)
-            if DIST_VOLTAR_CUBO:
-                blt.abaixar_garra()
-                blt.fechar_garra()
-                dar_ré(DIST_VOLTAR_CUBO) #!
-                blt.abrir_garra();
-                blt.mediar_garra()
-            dar_ré(DIST_CRUZAMENTO_CUBO + DIST_EIXO_SENSOR)
-            cel_atual = cel_atual
-            continue
-        blt.abaixar_garra()
-        blt.fechar_garra()
-        blt.mediar_garra() #! levantar?
-        cubos_no_robo[0] = cor #! Mudar a logica do 0 ao pegar dois cubos.
-        blt.mostrar_cubos(cubos_no_robo)
-        LOG(f"Mostrando cubos")
-        imprimir_mapa()
-
-        LOG(f"procura: cubo cor {cor}")
-        atualizar_estado_celula(cel_destino, False)
-        dar_ré(DIST_CRUZAMENTO_CUBO + DIST_EIXO_SENSOR)
         return cor, cel_atual
 
     imprimir_mapa()

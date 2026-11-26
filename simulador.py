@@ -1,7 +1,7 @@
 import pygame
 from lib.grafo import *
 
-CUBOS = {(1, 5): "AZUL", (4, 6): "VERMELHO", (6, 8): "VERDE"} #adicionar cubos na pista aqui
+CUBOS ={} #{(1, 5): "AZUL",(0,2):"AMARELO", (4, 6): "VERMELHO", (6, 8): "VERDE"} #adicionar cubos na pista aqui
 FRAMES_POR_CELULA = 8      
 TAM = 48 #tamanho de cada célula na tela
 
@@ -110,6 +110,24 @@ def olhar(destino):
     angulo = DIRECOES[(destino[0] - pos[0], destino[1] - pos[1])]
     for i in range(15): desenhar()
 
+def atualizar_estado_celula(destino, ocupada):
+    if ocupada: coloca_obstaculo(destino)
+    else:       tira_obstaculo(destino)
+
+def verificar_aresta(aresta):
+    ini, fim = aresta
+    meio = ((ini[0] + fim[0]) // 2, (ini[1] + fim[1]) // 2)
+    return True, CUBOS.get(meio)
+
+def atravessa_rua_pegando_cubo_ou_nao(aresta):
+    ini, fim = aresta
+    meio = ((ini[0] + fim[0]) // 2, (ini[1] + fim[1]) // 2)
+    passa, cor = verificar_aresta(aresta)
+    atualizar_estado_celula(meio, not passa)
+    if passa:
+        andar([ini, meio, fim])
+    return cor, pos
+
 #def procura():
 #    cel_atual = pos
 #    incertas = pegar_celulas_incertas()
@@ -144,44 +162,27 @@ def olhar(destino):
 #    return None
 
 def procura():
-    cel_atual = pos
-    incertas = pegar_celulas_incertas_alcancaveis(grafo, pos)
-
-    while incertas:
-        #candidatas = sorted(incertas, key=lambda c: heuristica(cel_atual, c))[:3]
+    while True:
+        incertas = pegar_celulas_incertas_alcancaveis(grafo, pos)
         caminhos = {
-            cel: achar_caminhos(grafo, cel_atual, cel, ORIENTACOES[angulo%360]) for cel in incertas
+            cel: achar_caminhos(grafo, pos, cel, ORIENTACOES[angulo%360])
+            for cel in incertas
         }
-        incertas.sort(key=lambda x: (
-            len(caminhos[x]) if caminhos[x] is not None else 9000
-        ))
-
-        #destino = candidatas[0]
-        destino = incertas.pop(0)
-        #incertas.remove(destino)
+        alcancaveis = [cel for cel in incertas if caminhos[cel]]
+        if not alcancaveis:
+            return None
+        destino = min(alcancaveis, key=lambda cel: len(caminhos[cel]))
         caminho = caminhos[destino]
-
-        if not caminho:
-            continue
-
-        caminho.pop(-1)
+        caminho.pop()
         andar(caminho)
-        cel_atual = pos
-
         olhar(destino)
-        if destino not in CUBOS:
-            tira_obstaculo(destino)
-            andar([cel_atual, destino])
-            cel_atual = pos
-            continue
+        dy, dx = destino[0] - pos[0], destino[1] - pos[1]
+        depois = (pos[0] + 2 * dy, pos[1] + 2 * dx)
+        cor, _ = atravessa_rua_pegando_cubo_ou_nao((pos, depois))
+        if cor is not None:
+            return destino
 
-        cor = CUBOS[destino]
-        tira_obstaculo(destino)
-        return destino
-
-    return None
-
-while CUBOS:
+while True:
     destino = procura()
     if destino is None: break               
     na_garra = CUBOS.pop(destino)              
