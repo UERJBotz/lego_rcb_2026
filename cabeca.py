@@ -29,11 +29,7 @@ BOTÕES_DESLIGA = {Button.LEFT}
 
 NUM_CUBOS_PEGÁVEIS = 2
 
-<<<<<<< HEAD
 VEL_ALINHAR = 80
-=======
-    VEL_ALINHAR = 80
->>>>>>> 89780af (vel adaptativa funcionando com essa vel específica)
 VEL_ANG_ALINHAR = 20
 GIRO_MAX_ALINHAR = 90
 
@@ -57,15 +53,9 @@ DIST_ALINHAR_PID_CACAMBA = 60
 DIST_BORDA_CAÇAMBA = 130
 DIST_CAÇAMBA = 100
 DIST_VERDE_CAÇAMBA = 80
-<<<<<<< HEAD
-VEL_SEGUIR_LINHA = 280 #mm/s
-VEL_MIN_SEGUIR_LINHA = 100
-K_VEL = 2
-=======
-VEL_SEGUIR_LINHA = 150 #mm/s  testar valores
-VEL_MIN_SEGUIR_LINHA = 90
-K_VEL = 1.5   #testar valores
->>>>>>> 9c9c368 (tuning: kp e kd parecendo estaveis + fix)
+VEL_SEGUIR_LINHA = 600 #mm/s
+VEL_MIN_SEGUIR_LINHA = 360
+K_VEL = 5
 TAM_PISTA_TODA = TAM_QUARTEIRÃO*6
 BLOCO_MEIO = 4
 
