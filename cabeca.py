@@ -146,7 +146,7 @@ def main():
             posicionamento_inicial()
 
         dir_linha.mul = dir_linha.DIR
-        while True:
+        while False:
             LOG(f"main: varrendo: quarteirão {quarteirão_atual}")
 
             achar_não_verde_alinhado()
@@ -212,7 +212,7 @@ def test():
         global BOTÕES_DESLIGA
         BOTÕES_DESLIGA = {Button.CENTER}
 
-    if True:
+    if False:
         if False: tira_obstaculo((0,2))
         if False: tira_obstaculo((0,4))
         if False: tira_obstaculo((1,5))
@@ -224,16 +224,16 @@ def test():
             cores_caçambas = [
                 Cor.enum.NENHUMA for _ in range(NUM_CAÇAMBAS)
             ]
-            if True: cores_caçambas[0] = Cor.VERMELHO
-            if True: cores_caçambas[1] = Cor.AMARELO
-            if True: cores_caçambas[2] = Cor.AZUL
+            if True: cores_caçambas[0] = Cor.AZUL
+            if True: cores_caçambas[1] = Cor.VERMELHO
+            if True: cores_caçambas[2] = Cor.MARROM
             if True: cores_caçambas[3] = Cor.VERDE
             if True: cores_caçambas[4] = Cor.PRETO
             blt.mostrar_caçambas(cores_caçambas)
 
         if False: orientação_estimada = "N"
         if False: orientação_estimada = "S"
-        if True: orientação_estimada = "L"
+        if False: orientação_estimada = "L"
         if False: orientação_estimada = "O"
 
         if True:
@@ -357,7 +357,31 @@ def test():
         blt.retrair_plataforma()
         bipes.separador()
 
+# Logica colocar um cubo na plataforma.
+
+
+    if True:
+        LOG("retrai_plataforma")
+        blt.retrair_plataforma()
+        bipes.separador()
+
+        LOG("abaixa_garra")
+        blt.abrir_garra()
+        blt.abaixar_garra()
+        bipes.separador()
+
+        LOG("levanta_garra")
+        blt.fechar_garra()
+        blt.levantar_garra()
+        bipes.separador()
+        blt.mediar_garra()
+        blt.abrir_garra()
+        blt.levantar_garra()      
+
+# Logica colocar um cubo na plataforma.  
+
     if False:
+        #Logica colocar um cubo na plataforma.
         LOG("retrai_plataforma")
         blt.retrair_plataforma()
         bipes.separador()
@@ -409,7 +433,9 @@ def test():
         blt.estender_plataforma()
         blt.mediar_garra()
         blt.fechar_garra()
+        blt.levantar_garra()
         blt.retrair_plataforma()
+        blt.mediar_garra()
         blt.abrir_garra()
 
     LOG("fim do teste")
