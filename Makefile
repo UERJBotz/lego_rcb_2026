@@ -65,7 +65,9 @@ rabo:: rabo_monitor
 
 .PHONY: rabo_principais rabo_monitor
 .PHONY: rabo_main rabo_blt rabo_comum rabo_monitor
-rabo_principais: rabo_main rabo_blt rabo_comum
+rabo_principais:: rabo_main 
+rabo_principais:: rabo_blt 
+rabo_principais:: rabo_comum
 rabo_main: rabo.py
 	$(AMPY) --port /dev/ttyUSB0 put $< main.py
 rabo_blt: bluetooth.py
