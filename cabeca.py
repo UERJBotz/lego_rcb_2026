@@ -572,6 +572,23 @@ def andar_até_idx(*conds_parada: Callable, dist_max=TAM_PISTA_TODA) -> tuple[bo
                 return i+1, retorno
     return 0, (rodas.distance(),)
 
+def girar_até_dist(giro_max=90):
+    with mudar_velocidade(80, 30):
+        rodas.reset()
+        rodas.turn(giro_max, wait=False)
+        while not rodas.done():
+            dist = blt.ver_dist_cubo()
+            if dist <= TAM_BLOCO:
+                rodas.stop()
+                LOG("Achei o cubo e estou indo para ele.")
+                #WAIT(2000)
+                return
+        LOG("Não achei o cubo.")
+        rodas.turn(-rodas.angle())
+        return
+
+
+
 def girar_até_linha(margem=0.1, giro_max=360):
     raio_refl = REFL_IDEAL - REFL_MIN
     margem_refl = raio_refl*margem
@@ -594,10 +611,12 @@ def girar_até_linha(margem=0.1, giro_max=360):
                 rodas.stop()
                 LOG("Achei a linha e estou seguindo a esquerda dela.", centro)
                 #WAIT(2000)
+                return dir_linha.ESQ
             elif abs(centro - REFL_IDEAL) <= margem_refl and giro_max < 0:
                 rodas.stop()
                 LOG("Achei a linha e estou seguindo a direita dela.", centro)
                 #WAIT(2000)
+                return dir_linha.DIR
 
         LOG("Não achei a linha.")
         return dir_linha.mul
@@ -801,7 +820,7 @@ def curva_linha_direita():
 
 def virar_esquerda_linha():
     alinhar_eixo_cruzamento()
-    rodas.turn(-45)
+    rodas.turn(-60)
     girar_até_linha(giro_max=-115)
     dir_linha.mul = dir_linha.DIR
     #dar_ré(DIST_EIXO_SENSOR)
@@ -809,7 +828,7 @@ def virar_esquerda_linha():
 
 def virar_direita_linha():
     alinhar_eixo_cruzamento()
-    rodas.turn(+45)
+    rodas.turn(+60)
     girar_até_linha(giro_max=+115)
     dir_linha.mul = dir_linha.ESQ
     #dar_ré(DIST_EIXO_SENSOR)
@@ -973,12 +992,12 @@ def seguir_caminho(caminho): #! lidar com outras coisas
                 if movs[i+2:] and movs[i+2] != tipo_movimento.FRENTE:
                     dar_ré(rodas.distance())
             else:
-                achar_cruzamento_linha(dist_max=TAM_BLOCO + 2*DIST_EIXO_SENSOR)
+                achar_cruzamento_linha(dist_max=TAM_BLOCO)
         elif mov == tipo_movimento.TRAS:
             if movs[i+1:] and movs[i+1] == tipo_movimento.FRENTE:
                 dar_meia_volta_linha()
                 #achar_não_cruzamento()
-                achar_cruzamento_linha(dist_max=TAM_BLOCO - 2*DIST_EIXO_SENSOR)
+                achar_cruzamento_linha(dist_max=TAM_BLOCO)
                 achar_não_cruzamento()
             else:
                 dar_meia_volta_linha()
@@ -1050,12 +1069,14 @@ def acertar_orientação_linha(ori): #! isso não deveria andar pra frente
     if idx_diff == -1:
         LOG("Fazendo curva esquerda para pegar cubo.")
         virar_esquerda_linha()
+        girar_até_dist(giro_max=-30)
     if idx_diff ==  0:
         LOG("Dando meia volta para pegar cubo.")
         dar_meia_volta_linha()
     if idx_diff ==  1:
         LOG("Fazendo curva direita para pegar cubo.")
         virar_direita_linha()
+        girar_até_dist(giro_max=30)
 
 def posicionamento_inicial():
     global orientação_estimada
@@ -1099,11 +1120,13 @@ def colocar_cubo_na_caçamba(cor_cubo, max_cubos=NUM_CUBOS_PEGÁVEIS):
 
     achar_não_verde_alinhado()
     LOG("alinhar_caçambas: viu não verde (espera amarelo)")
+    WAIT(2000)
     dar_ré_meio_quarteirão()
 
     virar_direita()
     achar_não_verde_alinhado()
     LOG("alinhar_caçambas: viu não verde (espera vermelho)")
+    WAIT(2000)
 
     dar_ré(DIST_BORDA_CAÇAMBA + DIST_EIXO_SENSOR)
     dar_meia_volta()
