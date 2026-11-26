@@ -496,7 +496,6 @@ def dar_meia_volta_linha():
     if   dir_linha.mul == dir_linha.ESQ: rodas.curve(TAM_FAIXA//2, +180)
     elif dir_linha.mul == dir_linha.DIR: rodas.curve(TAM_FAIXA//2, -180)
 
-
     orientação_estimada = inverte_orientação()
     LOG(f"dar_meia_volta_linha: {orientação_estimada=}")
 
@@ -1110,6 +1109,11 @@ def posicionamento_inicial():
             orientação_estimada = "O"
             virar_direita()
 
+def colocar_cubos_nas_caçambas(cores_cubos, max_cubos=NUM_CUBOS_PEGÁVEIS):
+    colocar_cubo_na_caçamba(cores_cubos[0])
+    posicionamento_inicial()
+    colocar_cubo_na_caçamba(cores_cubos[1])
+
 def colocar_cubo_na_caçamba(cor_cubo, max_cubos=NUM_CUBOS_PEGÁVEIS):
     global cubos_caçambas
     margem      = TAM_CUBO//2 if max_cubos != 1 else (TAM_CUBO*3)//2
@@ -1151,26 +1155,65 @@ def colocar_cubo_na_caçamba(cor_cubo, max_cubos=NUM_CUBOS_PEGÁVEIS):
 
             achar_não_verde_alinhado(max_tentativas=5, virar=False)
 
-            LOG(f"colocar_cubo_na_caçamba: retraindo plataforma")
-            blt.retrair_plataforma()
-            LOG(f"colocar_cubo_na_caçamba: estendendo plataforma")
-            blt.estender_plataforma()
-            LOG(f"colocar_cubo_na_caçamba: garra")
-            blt.mediar_garra()
-            blt.fechar_garra()
-            blt.levantar_garra()
-            blt.retrair_plataforma()
-
+            LOG(f"colocar_cubo_na_caçamba: indo soltar cubo")
+            [_, cubo_garra] = cubos_no_robo
+            if cubo_garra == Cor.NENHUMA:
+                pegar_cubo_da_plataforma()
             rodas.straight(DIST_VERDE_CAÇAMBA)
-
-            blt.mediar_garra()
-            blt.abrir_garra()
+            soltar_cubo_em_cima_caçamba()
 
             cubos_caçambas[i] += 1
             return
 
     SucessoOuCatástrofe("sem lugar pro cubo nas caçambas")
 
+def segurar_cubo(cor):
+    blt.abaixar_garra()
+    blt.fechar_garra()
+    cubos_no_robo[1] = blt.ver_cor_cubo()
+    return cubos_no_robo[1]
+
+def colocar_cubo_na_plataforma(cor):
+    blt.levantar_garra()
+    blt.estender_plataforma()
+    blt.mediar_garra()
+    blt.abrir_garra()
+
+    cubos_no_robo[0] = cor
+
+def pegar_cubo(cor):
+    [cubo_plataforma, _] = cubos_no_robo
+    if cubo_plataforma == Cor.NENHUMA:
+        LOG(f"pegar_cubo: primeiro cubo: {Cor(cor)}")
+        cor = segurar_cubo(cor)
+        LOG(f"pegar_cubo: substituindo por cor.{Cor(cor)}")
+        colocar_cubo_na_plataforma(cor)
+        blt.levantar_garra()
+        blt.sacodir_plataforma()
+        blt.mostrar_cubos(cubos_no_robo)
+    else:
+        LOG(f"pegar_cubo: segundo cubo: {Cor(cor)}")
+        cor = segurar_cubo()
+        LOG(f"pegar_cubo: substituindo por cor.{Cor(cor)}")
+        blt.levantar_garra()
+        blt.mostrar_cubos(cubos_no_robo)
+
+def pegar_cubo_da_plataforma():
+    LOG(f"pegar_cubo_da_plataforma: retraindo e estendendo plataforma")
+    blt.retrair_plataforma()
+    blt.estender_plataforma()
+    LOG(f"pegar_cubo_da_plataforma: garra")
+    blt.mediar_garra()
+    blt.fechar_garra()
+    blt.levantar_garra()
+    LOG(f"pegar_cubo_da_plataforma: retraindo plataforma")
+    blt.retrair_plataforma()
+    cubos_no_robo[1] = cubos_no_robo[0]
+
+def soltar_cubo_em_cima_caçamba():
+    LOG(f"soltar_cubo_em_cima_caçamba: garra")
+    blt.mediar_garra()
+    blt.abrir_garra()
 
 def verificar_aresta(dist_cubo_perto=TAM_BLOCO, dist_max=TAM_QUARTEIRÃO, dist_min=DIST_CRUZAMENTO_CUBO//10):
     ## estamos no cruzamento virados pra aresta
@@ -1210,16 +1253,7 @@ def verificar_aresta(dist_cubo_perto=TAM_BLOCO, dist_max=TAM_QUARTEIRÃO, dist_m
             else:
                 # um cubo pegável
                 LOG(f"verificar_aresta: viu cor.{Cor(cor)}")
-                blt.abaixar_garra()
-                blt.fechar_garra()
-                cor = blt.ver_cor_cubo()
-                LOG(f"verificar_aresta: substituindo por cor.{Cor(cor)}")
-                blt.levantar_garra()
-                blt.estender_plataforma()
-                blt.mediar_garra()
-                blt.abrir_garra()
-                blt.levantar_garra()
-                blt.sacodir_plataforma()
+                pegar_cubo(cor)
 
                 achar_cruzamento_linha(dist_max=dist_max-rodas.distance())
                 return True, cor
