@@ -262,7 +262,7 @@ def test():
             tira_obstaculo(obs)
 
         caminho = blt.achar_caminhos((8,8), (6,6), "L")
-        seguir_caminho_inclusivo(caminho)
+        seguir_caminho_exclusivo(caminho)
 
     while False:
         cor = blt.ver_cor_cubo()
@@ -955,16 +955,15 @@ def alinha_re(max_tentativas=3,
                 rodas.turn(ang)
     return extra
 
-def seguir_caminho_inclusivo(caminho):
-    cel_destino = caminho.pop(-1)
-    cel_final   = caminho[-1]
+def seguir_caminho_exclusivo(caminho, cel_destino):
+    cel_final = caminho[-1]
 
     ## acerta orientação para como se tivesse andado tudo
     restante = [cel_final, cel_destino]
     _, ori_final = achar_movimentos(restante, orientação_estimada)
 
     seguir_caminho(caminho)
-    LOG("seguir_caminho_inclusivo: acertar_orientação_linha")
+    LOG("seguir_caminho_exclusivo: acertar_orientação_linha")
     acertar_orientação_linha(ori_final)
     return cel_final
 
@@ -1238,22 +1237,18 @@ def atravessa_rua_pegando_cubo_ou_nao(aresta, dist_max=TAM_QUARTEIRÃO):
     def aresta_como_pos(aresta):
         n1, n2 = aresta
         return (n1[0]+n2[0])//2, (n1[1]+n2[1])//2
-    def _tira_obstaculo(aresta): #!
-        LOG(f"Tirei obstaculo da aresta {aresta}.")
-        atualizar_estado_celula(aresta_como_pos(aresta), False)
-    def _coloca_obstaculo(aresta): #!
-        LOG(f"Coloquei obstaculo na aresta {aresta}")
-        atualizar_estado_celula(aresta_como_pos(aresta), True)
 
     passa, cor = verificar_aresta(dist_max=dist_max)
     ini, fim = aresta
     if passa:
         # cubo ou nada
-        _tira_obstaculo(aresta)
+        LOG(f"Tirei obstaculo da aresta {aresta}.")
+        atualizar_estado_celula(aresta_como_pos(aresta), False)
         return cor, fim
     else:
         # obstáculo
-        _coloca_obstaculo(aresta)
+        LOG(f"Coloquei obstaculo na aresta {aresta}")
+        atualizar_estado_celula(aresta_como_pos(aresta), True)
         return cor, ini
 
 #! considerar adversário
@@ -1285,10 +1280,8 @@ def partial(func, *args, **kwargs):
     return lambda *a, **kw: func(*args, *a, **kwargs, **kw)
 
 def atualizar_estado_celula(pos, ocupada):
-    if ocupada:
-        coloca_obstaculo(pos)
-    else:
-        tira_obstaculo(pos)
+    if ocupada: coloca_obstaculo(pos)
+    else:       tira_obstaculo(pos)
     blt.atualizar_celula(pos, ocupada)
 
 #! tá empurrando?
@@ -1303,12 +1296,13 @@ def procura(pos_estimada, cores_caçambas):
 
     while True:
         chave_caminho = blt.procurar_caminhos(cel_atual, orientação_estimada)
-        if chave_caminho is None: return None
-        cel_atual, cel_destino, caminho = chave_caminho
-        if caminho is None: continue
+        if chave_caminho is not None:
+            cel_atual, cel_destino, caminho = chave_caminho
+            if caminho is None: continue
+        else: break
 
         ## anda até ficar imediatamente antes de procurates da celula destino
-        (y0,x0) = seguir_caminho_inclusivo(caminho)
+        (y0,x0) = seguir_caminho_exclusivo(caminho, cel_destino)
         (y1,x1) = cel_destino
         depois = (y0 + 2*(y1-y0), x0 + 2*(x1-x0))
         cor, cel_atual = atravessa_rua_pegando_cubo_ou_nao(((y0, x0), depois))
@@ -1322,7 +1316,6 @@ def procura(pos_estimada, cores_caçambas):
         LOG(f"procura: cubo cor {cor}")
         #! fazer igual isso na varredura (colocar em função)
         #! colocar pra dizer que é a cor do cubo de cima ou de baixo
-        cor = blt.ver_cor_cubo()
         if cor == Cor.enum.NENHUMA:
             LOG("procura: cel livre viu cor.NENHUMA*")
             atualizar_estado_celula(cel_destino, False)
