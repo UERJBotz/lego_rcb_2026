@@ -12,7 +12,7 @@ from lib.polyfill import Enum
 from comum import globais, coringa
 from comum import LOG, ERRO, ASSERT
 
-ANG_GARRA_FECHADA = 70
+ANG_GARRA_FECHADA = 90
 ANG_GARRA_ABERTA  = 0
 
 #! from cores import cor as Cor
