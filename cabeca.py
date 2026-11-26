@@ -203,7 +203,9 @@ def main():
             rodas.turn(-rodas.angle())
 
             cor, pos_estimada = procura(pos_estimada, cores_caçambas)
-            LOG(f"main: tinha cubo {Cor(cor)} na frente de {pos_estimada}") #! LOG de procura antigo
+            LOG(f"main: tinha cubo 1 {Cor(cor)} na frente de {pos_estimada}")  #! usar posição guardada do cubo
+            cor, pos_estimada = procura(pos_estimada, cores_caçambas)
+            LOG(f"main: tinha cubo 2 {Cor(cor)} na frente de {pos_estimada}") #! usar posição guardada do cubo
 
             caminho_volta = achar_caminhos(pos_estimada, (0,0))
             LOG(f"main: seguindo caminho de volta: {caminho_volta}")
@@ -212,7 +214,7 @@ def main():
             rodas.straight(DIST_EIXO_SENSOR)
 
             LOG(f"main: indo colocar cubo")
-            colocar_cubo_na_caçamba(cor)
+            colocar_cubos_nas_caçambas(cubos_no_robo)
             dar_ré(DIST_VERDE_CAÇAMBA)
 
 def test():
@@ -931,10 +933,9 @@ def alinhar(max_tentativas=4, virar=True, #! virar=False?
                 rodas.turn(-ang)
                 dar_ré(dist)
                 rodas.turn(ang)
-    #! às vezes ele retorna como verde verde, tentei fazer isso pra resolver
-    #if extra == (Cor.enum.VERDE, Cor.enum.VERDE):
-    #    LOG("alinhar: vou na fé")
-    #    return achar_não_verde()
+    #!!!! isso de baixo se ele andar muito/ficar girando em falso em
+    #!!!! alguma coisa acaba dando (dist,) do alinha_parede e crasha
+    #!!!! onde espera esq,dir
     return extra
 
 def alinha_re(max_tentativas=3,
@@ -1110,9 +1111,10 @@ def posicionamento_inicial():
             virar_direita()
 
 def colocar_cubos_nas_caçambas(cores_cubos, max_cubos=NUM_CUBOS_PEGÁVEIS):
-    colocar_cubo_na_caçamba(cores_cubos[0])
+    [plat, garr] = cores_cubos
+    colocar_cubo_na_caçamba(plat)
     posicionamento_inicial()
-    colocar_cubo_na_caçamba(cores_cubos[1])
+    colocar_cubo_na_caçamba(garr)
 
 def colocar_cubo_na_caçamba(cor_cubo, max_cubos=NUM_CUBOS_PEGÁVEIS):
     global cubos_caçambas
@@ -1156,8 +1158,8 @@ def colocar_cubo_na_caçamba(cor_cubo, max_cubos=NUM_CUBOS_PEGÁVEIS):
             achar_não_verde_alinhado(max_tentativas=5, virar=False)
 
             LOG(f"colocar_cubo_na_caçamba: indo soltar cubo")
-            [_, cubo_garra] = cubos_no_robo
-            if cubo_garra == Cor.NENHUMA:
+            [_, garr] = cubos_no_robo
+            if garr == Cor.NENHUMA:
                 pegar_cubo_da_plataforma()
             rodas.straight(DIST_VERDE_CAÇAMBA)
             soltar_cubo_em_cima_caçamba()
@@ -1208,12 +1210,16 @@ def pegar_cubo_da_plataforma():
     blt.levantar_garra()
     LOG(f"pegar_cubo_da_plataforma: retraindo plataforma")
     blt.retrair_plataforma()
+
     cubos_no_robo[1] = cubos_no_robo[0]
+    cubos_no_robo[0] = Cor.NENHUMA
 
 def soltar_cubo_em_cima_caçamba():
     LOG(f"soltar_cubo_em_cima_caçamba: garra")
     blt.mediar_garra()
     blt.abrir_garra()
+
+    cubos_no_robo[1] = Cor.NENHUMA
 
 def verificar_aresta(dist_cubo_perto=TAM_BLOCO, dist_max=TAM_QUARTEIRÃO, dist_min=DIST_CRUZAMENTO_CUBO//10):
     ## estamos no cruzamento virados pra aresta
