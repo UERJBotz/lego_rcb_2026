@@ -60,9 +60,6 @@ REFL_MIN, REFL_MAX = 22, 99
 REFL_IDEAL = (REFL_MAX + REFL_MIN)/2
 VEL_SEGUIR_LINHA = 100 #mm/s
 
-DISTS_CAÇAMBAS = [ DIST_BORDA_CAÇAMBA +
-                   TAM_CAÇAMBA*i + DIST_CAÇAMBA*i
-                   for i in range(NUM_CAÇAMBAS) ]
 cubos_caçambas = [0 for i in range(NUM_CAÇAMBAS)]
 cores_caçambas = []
 
@@ -1115,8 +1112,7 @@ def colocar_cubos_nas_caçambas(cores_cubos, max_cubos=NUM_CUBOS_PEGÁVEIS):
 
 def colocar_cubo_na_caçamba(cor_cubo, max_cubos=NUM_CUBOS_PEGÁVEIS):
     global cubos_caçambas
-    margem      = TAM_CUBO//2 if max_cubos != 1 else (TAM_CUBO*3)//2
-    espaçamento = TAM_CUBO    if max_cubos == 2 else 0
+    AJUSTE_BORDA_CAÇAMBA = 0
 
     ASSERT(cor_cubo != Cor.enum.NENHUMA)
     blt.levantar_garra()
@@ -1139,26 +1135,28 @@ def colocar_cubo_na_caçamba(cor_cubo, max_cubos=NUM_CUBOS_PEGÁVEIS):
     LOG("alinhar_caçambas: viu não verde (espera vermelho)")
     WAIT(2000)
 
-    dar_ré(DIST_BORDA_CAÇAMBA + DIST_EIXO_SENSOR)
+    dar_ré(DIST_BORDA_CAÇAMBA + AJUSTE_BORDA_CAÇAMBA)
     dar_meia_volta()
 
     LOG("colocar_cubo_na_caçamba: indo até a caçamba")
-    for i, (cor, dist) in enumerate(zip(cores_caçambas, DISTS_CAÇAMBAS)):
+    for i, cor in enumerate(cores_caçambas):
         if cor_cubo == cor:
             if cubos_caçambas[i] > max_cubos: continue
 
             LOG(f"colocar_cubo_na_caçamba: colocando na caçamba {Cor(cor)}")
-            rodas.straight(dist - DIST_BORDA_CAÇAMBA - margem
-                          + cubos_caçambas[i]*(TAM_CUBO + espaçamento))
+            desloc_caçamba = (TAM_CAÇAMBA + DIST_CAÇAMBA)*i
+            desloc_cubo    = (TAM_CUBO)*(cubos_caçambas[i]%3)
+            rodas.straight(desloc_caçamba + desloc_cubo - AJUSTE_BORDA_CAÇAMBA)
             virar_direita()
 
             achar_não_verde_alinhado(max_tentativas=5, virar=False)
 
             LOG(f"colocar_cubo_na_caçamba: indo soltar cubo")
             [_, garr] = cores_cubos_pegos
+            blt.retrair_plataforma()
             if garr == Cor.NENHUMA:
                 pegar_cubo_da_plataforma()
-            rodas.straight(DIST_VERDE_CAÇAMBA)
+            rodas.straight(min(blt.ver_dist_cubo(), DIST_VERDE_CAÇAMBA))
             soltar_cubo_em_cima_caçamba()
 
             cubos_caçambas[i] += 1
@@ -1185,6 +1183,7 @@ def colocar_cubo_na_plataforma(cor):
 def pegar_cubo(cor):
     [cubo_plataforma, _] = cores_cubos_pegos
     if cubo_plataforma == Cor.NENHUMA:
+        # primeiro cubo
         LOG(f"pegar_cubo: primeiro cubo: {Cor(cor)}")
         cor = segurar_cubo(cor)
         LOG(f"pegar_cubo: substituindo por cor.{Cor(cor)}")
@@ -1193,10 +1192,15 @@ def pegar_cubo(cor):
         blt.sacodir_plataforma()
         blt.mostrar_cubos(cores_cubos_pegos)
     else:
+        # segundo cubo
         LOG(f"pegar_cubo: segundo cubo: {Cor(cor)}")
         cor = segurar_cubo(cor)
         LOG(f"pegar_cubo: substituindo por cor.{Cor(cor)}")
         blt.levantar_garra()
+        blt.estender_plataforma()
+        blt.mediar_garra()
+        blt.abrir_garra()
+        blt.fechar_garra()
         blt.mostrar_cubos(cores_cubos_pegos)
 
 def pegar_cubo_da_plataforma():
@@ -1217,6 +1221,7 @@ def soltar_cubo_em_cima_caçamba():
     LOG(f"soltar_cubo_em_cima_caçamba: garra")
     blt.mediar_garra()
     blt.abrir_garra()
+    blt.levantar_garra()
 
     cores_cubos_pegos[1] = Cor.NENHUMA
 
