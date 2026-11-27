@@ -27,7 +27,7 @@ BOTÃO_PAUSA    = Button.CENTER
 BOTÃO_CONTINUA = Button.CENTER
 BOTÕES_DESLIGA = {Button.LEFT}
 
-NUM_CUBOS_PEGÁVEIS = 2
+NUM_CUBOS_PEGÁVEIS = 6
 
 VEL_ALINHAR = 80
 VEL_ANG_ALINHAR = 20
@@ -1109,9 +1109,9 @@ def posicionamento_inicial():
 
 def colocar_cubos_nas_caçambas(cores_cubos, max_cubos=NUM_CUBOS_PEGÁVEIS):
     [plat, garr] = cores_cubos
-    colocar_cubo_na_caçamba(plat)
-    posicionamento_inicial()
     colocar_cubo_na_caçamba(garr)
+    posicionamento_inicial()
+    colocar_cubo_na_caçamba(plat)
 
 def colocar_cubo_na_caçamba(cor_cubo, max_cubos=NUM_CUBOS_PEGÁVEIS):
     global cubos_caçambas
