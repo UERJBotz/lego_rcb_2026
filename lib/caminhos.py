@@ -19,10 +19,11 @@ estado_celula = Enum("estado_celula", ["LIVRE",
 
 class Bloco:
     def __init__(self, estado=estado_celula.LIVRE,
-                       direc=direcionalidade.NENHUMA, mut=False):
+                       direc=direcionalidade.NENHUMA, mut=False, visitada=False):
         self.estado  = estado
         self.direc   = direc
         self.mutável = mut
+        self.visitada= visitada
 
 class Nada(Bloco):
     def __init__(self, estado=estado_celula.OCUPADA,
@@ -87,6 +88,14 @@ def coloca_obstaculo_incerto(pos):
     if cel.mutável: #! falhar mais alto
         cel.estado = estado_celula.INCERTO
 
+def visitar(pos):
+    y, x = pos; cel = mapa[y][x]
+    cel.visitada = True
+
+def visitada(pos):
+    y, x = pos; cel = mapa[y][x]
+    return cel.visitada
+
 def imprimir_mapa(matriz=mapa):
     """Imprime a matriz de forma alinhada."""
     largura_maxima = 12
@@ -121,7 +130,9 @@ class Cell():
         self.g     = g # Cost from start to this cell
         self.h     = h # Heuristic cost from this cell to destination
 
-direcoes = [(0, 1), (1, 0), (0, -1), (-1, 0)]  # Movimentos: direita, baixo, esquerda, cima
+orientações = {"L":(0, 1), "S":(1, 0), "O":(0, -1),"N":(-1, 0)}
+
+direcoes = [(0, 1), (1, 0), (0, -1), (-1, 0)]  # Movimentos: direita, baixo, esquerda, cima (l, s, o, n)
 
 def dist_manhatan(posicao_atual, destino):
     atual_x, atual_y = posicao_atual
@@ -180,11 +191,29 @@ def tracar_caminho(info_celulas, dest):
     path.append((row, col))
     # Reverse the path to get the path from source to destination
     path.reverse()
-    
+
     return path
 
+def custo_virada(atual, final):
+    if atual == final: return 0
+    if atual == (-final[0], -final[1]): return 2
+    return 1
+
+def custo_caminho(caminho, ori, peso_volta=0.3, peso_giro=1, peso_visitada = 0.5):
+    if not caminho: return 9000
+    custo = 0
+    direção = orientações[ori]
+    for cel, cel_prox in zip(caminho, caminho[1:]):
+        ndireção = (cel_prox[0] - cel[0], cel_prox[1] - cel[1])
+        custo += 1 + peso_giro * custo_virada(direção, ndireção)
+        if visitada(cel_prox): custo+= peso_visitada
+        direção = ndireção
+
+    custo += peso_volta * heuristica(caminho[-1], (0, 0))
+    return custo
+
 # Implement the A* search algorithm
-def a_estrela(grid, src, dest):
+def a_estrela(grid, src, dest, ori, peso_visitada=0.5, peso_giro=1):
     ok = True
     if not dentro_dos_limites(grid, src):
         ok = False; print(f"a_estrela: origem inválida {src}")
@@ -224,6 +253,7 @@ def a_estrela(grid, src, dest):
 
     # Initialize the flag for whether destination is found
     achou_dest = False
+    dir_ini = orientações[ori] 
 
     # Main loop of A* search algorithm
     while len(open_list) > 0:
@@ -233,7 +263,14 @@ def a_estrela(grid, src, dest):
         # Mark the cell as visited
         i = p[1]
         j = p[2]
+
+        if closed_list[i][j]: continue
         closed_list[i][j] = True
+        if eh_destino((i, j), dest): return tracar_caminho(info_celulas, dest)
+
+        atual = info_celulas[i][j]
+        if atual.i_pai == i and atual.j_pai == j: dir_atual = dir_ini
+        else: dir_atual = (i - atual.i_pai, j - atual.j_pai)
 
         # For each direction, check the successors
         for dir in direcoes:
@@ -247,31 +284,22 @@ def a_estrela(grid, src, dest):
 
                 if celula_especialmente_bloqueada(grid, (i,j), new): continue
 
-                # If the successor is the destination
-                if eh_destino(new, dest):
-                    # Set the parent of the destination cell
-                    info_celulas[new_i][new_j].i_pai = i
-                    info_celulas[new_i][new_j].j_pai = j
-                    print("a_estrela: caminho encontrado")
-                    # Trace and print the path from source to destination
-                    return tracar_caminho(info_celulas, dest)
-                else:
-                    # Calculate the new f, g, and h values
-                    g_new = info_celulas[i][j].g + 1.0
-                    h_new = heuristica(new, dest)
-                    f_new = g_new + h_new
+                g_new = info_celulas[i][j].g + 1.0 + custo_virada(dir_atual, dir)*peso_giro
+                if visitada(new): g_new += peso_visitada
+                h_new = heuristica(new, dest)
+                f_new = g_new + h_new
 
-                    # If the cell is not in the open list or the new f value is smaller
-                    if (info_celulas[new_i][new_j].f == float('inf') or
-                        info_celulas[new_i][new_j].f > f_new):
-                        # Add the cell to the open list
-                        heappush(open_list, (f_new, new_i, new_j))
-                        # Update the cell details
-                        info_celulas[new_i][new_j] = Cell(f = f_new,
-                                                          g = g_new,
-                                                          h = h_new,
-                                                          i_pai = i,
-                                                          j_pai = j)
+                # If the cell is not in the open list or the new f value is smaller
+                if (info_celulas[new_i][new_j].f == float('inf') or
+                    info_celulas[new_i][new_j].f > f_new):
+                    # Add the cell to the open list
+                    heappush(open_list, (f_new, new_i, new_j))
+                    # Update the cell details
+                    info_celulas[new_i][new_j] = Cell(f = f_new,
+                                                      g = g_new,
+                                                      h = h_new,
+                                                      i_pai = i,
+                                                      j_pai = j)
 
     # If the destination is not found after visiting all cells
     if not achou_dest:
@@ -352,8 +380,29 @@ def pegar_celulas_incertas():
                 incertas.append((i, j))
     return incertas
 
-def achar_caminhos(pos_ini, pos_fim):
-    caminho = a_estrela(mapa, pos_ini, pos_fim)
+def pegar_celulas_incertas_alcancaveis(pos_ini):
+    vistas     = {pos_ini}
+    explorando = [pos_ini]
+    incertas   = []
+
+    while explorando:
+        i, j = explorando.pop(0)
+        for di, dj in direcoes:
+            vizinho = (i + di, j + dj)
+
+            if vizinho in vistas: continue
+            if not dentro_dos_limites(mapa, vizinho): continue
+            if celula_especialmente_bloqueada(mapa, (i, j), vizinho): continue
+
+            vistas.add(vizinho)
+            estado = mapa[vizinho[0]][vizinho[1]].estado
+
+            if estado == estado_celula.LIVRE: explorando.append(vizinho)
+            elif estado == estado_celula.INCERTO: incertas.append(vizinho)
+    return incertas
+
+def achar_caminhos(pos_ini, pos_fim, orientacao):
+    caminho = a_estrela(mapa, pos_ini, pos_fim, ori=orientacao)
     return caminho
 
 def achar_movimentos(caminho, orientacao):
