@@ -1115,6 +1115,7 @@ def colocar_cubos_nas_caçambas(cores_cubos, max_cubos=NUM_CUBOS_PEGÁVEIS):
 def colocar_cubo_na_caçamba(cor_cubo, max_cubos=NUM_CUBOS_PEGÁVEIS):
     global cubos_caçambas
     AJUSTE_BORDA_CAÇAMBA = 0
+    NUM_CUBOS_BASE = 2
 
     ASSERT(cor_cubo != Cor.enum.NENHUMA)
     blt.levantar_garra()
@@ -1147,7 +1148,7 @@ def colocar_cubo_na_caçamba(cor_cubo, max_cubos=NUM_CUBOS_PEGÁVEIS):
 
             LOG(f"colocar_cubo_na_caçamba: colocando na caçamba {Cor(cor)}")
             desloc_caçamba = (TAM_CAÇAMBA + DIST_CAÇAMBA)*i
-            desloc_cubo    = (TAM_CUBO)*(cubos_caçambas[i]%3)
+            desloc_cubo    = (TAM_CUBO)*(cubos_caçambas[i]%NUM_CUBOS_BASE)
             rodas.straight(desloc_caçamba + desloc_cubo - AJUSTE_BORDA_CAÇAMBA)
             virar_direita()
 

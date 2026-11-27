@@ -43,6 +43,9 @@ class Cruz(Rua):
     def __str__(self): return '#'
 
 class Safe(Cruz):
+    def __init__(self, estado=estado_celula.LIVRE,
+                       direc=direcionalidade.NENHUMA, mut=False):
+        super().__init__(estado, direc, mut)
     def __str__(self): return '*'
 
 class Vert(Rua):
@@ -59,15 +62,15 @@ class Hori(Rua):
 
 
 mapa = [
-    [Safe(estado=estado_celula.LIVRE), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz()],
-    [Vert(estado=estado_celula.LIVRE), Vert(), Nada(), Vert(), Nada(), Vert(), Nada(), Vert(), Nada(), Vert(), Nada(), Vert()],
-    [Safe(estado=estado_celula.LIVRE), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz()],
-    [Vert(estado=estado_celula.LIVRE), Vert(), Nada(), Vert(), Nada(), Vert(), Nada(), Vert(), Nada(), Vert(), Nada(), Vert()],
-    [Safe(estado=estado_celula.LIVRE), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz()],
-    [Vert(estado=estado_celula.LIVRE), Vert(), Nada(), Vert(), Nada(), Vert(), Nada(), Vert(), Nada(), Vert(), Nada(), Vert()],
-    [Safe(estado=estado_celula.LIVRE), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz()],
-    [Vert(estado=estado_celula.LIVRE), Vert(), Nada(), Vert(), Nada(), Vert(), Nada(), Vert(), Nada(), Vert(), Nada(), Vert()],
-    [Safe(estado=estado_celula.LIVRE), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz()],
+    [Safe(), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz()],
+    [Nada(), Vert(), Nada(), Vert(), Nada(), Vert(), Nada(), Vert(), Nada(), Vert(), Nada(), Vert()],
+    [Safe(), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz()],
+    [Nada(), Vert(), Nada(), Vert(), Nada(), Vert(), Nada(), Vert(), Nada(), Vert(), Nada(), Vert()],
+    [Safe(), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz()],
+    [Nada(), Vert(), Nada(), Vert(), Nada(), Vert(), Nada(), Vert(), Nada(), Vert(), Nada(), Vert()],
+    [Safe(), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz()],
+    [Nada(), Vert(), Nada(), Vert(), Nada(), Vert(), Nada(), Vert(), Nada(), Vert(), Nada(), Vert()],
+    [Safe(), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz(), Hori(), Cruz()],
 ]
 
 MAPA_X_MAX = len(mapa[0]) -1
@@ -199,14 +202,14 @@ def custo_virada(atual, final):
     if atual == (-final[0], -final[1]): return 2
     return 1
 
-def custo_caminho(caminho, ori, peso_volta=0.3, peso_giro=1, peso_visitada = 0.5):
+def custo_caminho(caminho, ori, peso_volta=1, peso_giro=1, peso_visitada=0.5):
     if not caminho: return 9000
     custo = 0
     direção = orientações[ori]
     for cel, cel_prox in zip(caminho, caminho[1:]):
         ndireção = (cel_prox[0] - cel[0], cel_prox[1] - cel[1])
         custo += 1 + peso_giro * custo_virada(direção, ndireção)
-        if visitada(cel_prox): custo+= peso_visitada
+        if visitada(cel_prox): custo += peso_visitada
         direção = ndireção
 
     custo += peso_volta * heuristica(caminho[-1], (0, 0))
