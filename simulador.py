@@ -10,18 +10,34 @@ from lib.caminhos import (
     visitar,
 )
 
-CUBOS = {(3, 1): "VERDE"}  # cubos na pista: (linha, coluna) -> cor
+CUBOS = { # cubos na pista: (linha, coluna) -> cor
+    (1, 1): "AMARELO",
+    (1, 3): "AZUL",
+    (1, 5): "AZUL",
+    (1, 7): "AMARELO",
+    (0, 4): "VERDE",
+    (0, 8): "VERDE",
+    (4, 4): "BRANCO",
+    (8, 4): "VERDE",
+    (4, 6): "AMARELO",
+    (4, 8): "BRANCO",
+    (8, 8,): "VERDE",
+    (7, 11): "AMARELO",
+    (5, 11): "AZUL",
+    (3, 11): "AZUL",
+    (1, 11): "AZUL",
+}
 OBSTACULOS = set()  # coordenadas das ruas bloqueadas
 CORES_ACEITAS = None  # None aceita todas; configure com as cores das caçambas reais
-CAPACIDADE_POR_COR = 2
+CAPACIDADE_POR_COR = 6
 quantidades_entregues = {}
-FRAMES_POR_CELULA = 8      
+FRAMES_POR_CELULA = 8
 TAM = 48 #tamanho de cada célula na tela
 
-pos = (0, 0)               
-passos = 0              
-entregues = []             
-na_garra = None            
+pos = (0, 0)
+passos = 0
+entregues = []
+na_garra = None
 angulo = 0
 caminho_atual = []
 visitar(pos)
@@ -37,7 +53,16 @@ X_MIN, X_MAX, Y_MIN, Y_MAX = -3.5, 15.5, -1.3, 9.3
 FINO = 0.14 #espessura das linhas
 BRANCO, PRETO, AZUL = (245, 245, 245), (25, 25, 25), (30, 90, 220)
 VERDE, AMARELO, VERMELHO = (0, 140, 40), (250, 220, 0), (225, 25, 25)
-COR = {"AZUL": AZUL, "VERMELHO": VERMELHO, "VERDE": VERDE, "AMARELO": AMARELO, "PRETO": (60, 60, 60)}
+COR = {
+    "AZUL": AZUL,
+    "VERMELHO": VERMELHO,
+    "VERDE": VERDE,
+    "AMARELO": AMARELO,
+    "PRETO": (60, 60, 60),
+    "MARROM": None,
+    "BRANCO": BRANCO,
+    "NENHUMA": None,
+}
 
 pygame.init()
 tela = pygame.display.set_mode((int((X_MAX - X_MIN) * TAM), int((Y_MAX - Y_MIN) * TAM) + 36))
@@ -54,13 +79,13 @@ def ret(superficie, x0, y0, x1, y1, cor):
 def desenhar_fundo():
     s = pygame.Surface(tela.get_size()); s.fill((200, 200, 200))
     ret(s, -3.33, -1, 15.33, 9, BRANCO)
-    ret(s, -3.33, -1, -1.8, 9, AMARELO); ret(s, -1.8, -1, 0, 9, VERDE)          
-    ret(s, 12, -1, 13.8, 9, VERDE); ret(s, 13.8, -1, 15.33, 9, AMARELO)    
-    for linha in range(0, 9, 2):                                                
+    ret(s, -3.33, -1, -1.8, 9, AMARELO); ret(s, -1.8, -1, 0, 9, VERDE)
+    ret(s, 12, -1, 13.8, 9, VERDE); ret(s, 13.8, -1, 15.33, 9, AMARELO)
+    for linha in range(0, 9, 2):
         ret(s, 0, linha-FINO/2, 12, linha+FINO/2, PRETO)
-    for coluna in range(1, 12, 2):                                                    
+    for coluna in range(1, 12, 2):
         ret(s, coluna-FINO / 2, 0, coluna+FINO/2, 8, PRETO)
-    for x in (0, 12):                                                           
+    for x in (0, 12):
         ret(s, x-FINO / 2, -1, x+FINO / 2, 9, AZUL)
     pygame.draw.rect(s, (30, 30, 30), (0, tela.get_height() - 36, tela.get_width(), 36))   
     return s
@@ -80,13 +105,13 @@ def desenhar(lin=None, col=None):
     if lin is None: lin, col = pos
     processar_eventos()
     tela.blit(fundo, (0, 0))
-    for l, linha in enumerate(mapa):                    
+    for l, linha in enumerate(mapa):
         for c, cel in enumerate(linha):
             if cel.estado == estado_celula.INCERTO:
                 pygame.draw.circle(tela, (255, 150, 0), P(c, l), TAM // 8)
             elif cel.mutável and cel.estado == estado_celula.OCUPADA:
                 pygame.draw.circle(tela, (220, 30, 30), P(c, l), TAM // 8)
-    if len(caminho_atual) > 1:                              
+    if len(caminho_atual) > 1:
         pygame.draw.lines(tela, (0, 190, 255), False, [P(c, l) for l, c in caminho_atual], 4)
     lado = TAM // 3
     for (l, c), cor in CUBOS.items():
@@ -99,7 +124,8 @@ def desenhar(lin=None, col=None):
     dx, dy = {0: (1, 0), 90: (0, 1), 180: (-1, 0), -90: (0, -1)}[angulo]
     pygame.draw.line(tela, (0, 0, 0), (x, y), (x + dx * TAM // 3, y + dy * TAM // 3), 3)
     if na_garra:
-        pygame.draw.rect(tela, COR[na_garra], (x - 7, y - 7, 14, 14)); pygame.draw.rect(tela, (0, 0, 0), (x - 7, y - 7, 14, 14), 2)
+        pygame.draw.rect(tela, COR[na_garra], (x - 7, y - 7, 14, 14));
+        pygame.draw.rect(tela, (0, 0, 0), (x - 7, y - 7, 14, 14), 2)
     texto = f"passos: {passos}   entregues: {len(entregues)} {entregues}   cubos na pista: {len(CUBOS)}   (laranja = não olhou)"
     tela.blit(fonte.render(texto, True, (240, 240, 240)), (8, tela.get_height() - 26))
     pygame.display.flip()
