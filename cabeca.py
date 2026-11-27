@@ -673,9 +673,19 @@ def até_cruzamento(dist, esq, centro, dir, preto):
     )
 
 def até_dist_max(dist_max):
-    def func(dist, esq, centro, dir, preto):
+    def func(dist, esq, centro, dir, preto, dist_caçamba):
         return dist >= dist_max
     return func
+
+def até_ver_caçamba():
+        def func(dist,esq,centro,dir,preto,dist_caçamba):
+            return DIST_VERDE_CAÇAMBA >= dist_caçamba
+    return
+
+def até_não_ver_caçamba():
+    def func(dist,esq,centro,dir,preto,dist_caçamba):
+        return DIST_VERDE_CAÇAMBA <= dist_caçamba
+    return
 
 def até_dist_max_ou_cruzamento(dist_max):
     def func(dist, esq, centro, dir, preto):
@@ -777,7 +787,7 @@ def pid(kp, kd=0, ki=0):
 
 pid_linha = pid(kp=0.50)
 def seguir_linha_até(parada=até_dist_max_ou_cruzamento(TAM_PISTA_TODA),
-                     *, vel=None, pid=None, parar_no_verde=False, caçamba=False):
+                     *, vel=None, pid=None, parar_no_verde=False, caçamba=False, cubo=False):
     if vel is None: vel = VEL_SEGUIR_LINHA
     if pid is None: pid = pid_linha
 
@@ -788,15 +798,18 @@ def seguir_linha_até(parada=até_dist_max_ou_cruzamento(TAM_PISTA_TODA),
         esq    = sensor_cor_esq.reflection()
         centro = sensor_cor_centro.reflection()
         dir    = sensor_cor_dir.reflection()
+        dist_caçamba = blt.ver_dist_caçamba()
 
         if caçamba:
             erro = dir_linha.DIR * (REFL_IDEAL - esq)
+        if cubo:
+            erro = dir_linha.ESQ * (REFL_IDEAL - dir)
         else:
             erro = dir_linha.mul * (REFL_IDEAL - centro)
 
         rodas.drive(vel, pid(erro))
 
-        if parada(rodas.distance(), esq, centro, dir, preto): break
+        if parada(rodas.distance(), esq, centro, dir, preto, dist_caçamba): break
         if parar_no_verde: #! isso era o erro do bipe eterno, ver se precisa
             esq, dir = cores.todas(sensor_cor_esq, sensor_cor_dir)
             if esq == Cor.enum.VERDE    and dir == Cor.enum.VERDE: break
@@ -1127,27 +1140,31 @@ def colocar_cubo_na_caçamba(cor_cubo, max_cubos=NUM_CUBOS_PEGÁVEIS):
 
     achar_não_verde_alinhado()
     LOG("alinhar_caçambas: viu não verde (espera amarelo)")
-    WAIT(2000)
+    #WAIT(2000)
     dar_ré_meio_quarteirão()
 
     virar_direita()
     achar_não_verde_alinhado()
     LOG("alinhar_caçambas: viu não verde (espera vermelho)")
-    WAIT(2000)
+    #WAIT(2000)
 
-    dar_ré(DIST_BORDA_CAÇAMBA + AJUSTE_BORDA_CAÇAMBA)
+    dar_ré(DIST_EIXO_SENSO)
     dar_meia_volta()
-
+    virar_direita()
+    achar_não_verde_alinhado()
+    LOG("alinhar_caçambas: viu não verde (espera amarelo)")
+    rodas.straight(DIST_EIXO_SENSOR)
+    virar_esquerda()
     LOG("colocar_cubo_na_caçamba: indo até a caçamba")
     for i, cor in enumerate(cores_caçambas):
+        if cor == Cor.NENHUMA:
+            continue
+        seguir_linha_até(parada=até_ver_caçamba(),cubo=True)
+        seguir_linha_até(parada=até_ver_caçamba(),cubo=False)
         if cor_cubo == cor:
-            if cubos_caçambas[i] > max_cubos: continue
-
-            LOG(f"colocar_cubo_na_caçamba: colocando na caçamba {Cor(cor)}")
-            desloc_caçamba = (TAM_CAÇAMBA + DIST_CAÇAMBA)*i
-            desloc_cubo    = (TAM_CUBO)*(cubos_caçambas[i]%3)
-            rodas.straight(desloc_caçamba + desloc_cubo - AJUSTE_BORDA_CAÇAMBA)
+            LOG(Achei a caçamba)
             virar_direita()
+            rodas.straight(-DIST_EIXO_SENSOR)
 
             achar_não_verde_alinhado(max_tentativas=5, virar=False)
 
