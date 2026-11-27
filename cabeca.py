@@ -53,6 +53,9 @@ DIST_ALINHAR_PID_CACAMBA = 60
 DIST_BORDA_CAÇAMBA = 130
 DIST_CAÇAMBA = 100
 DIST_VERDE_CAÇAMBA = 80
+VEL_SEGUIR_LINHA = 600 #mm/s
+VEL_MIN_SEGUIR_LINHA = 360
+K_VEL = 5
 TAM_PISTA_TODA = TAM_QUARTEIRÃO*6
 BLOCO_MEIO = 4
 
@@ -137,6 +140,7 @@ def main():
         LOG("main: resetou", conta_reset, "vezes")
         blt.levantar_garra()
         blt.retrair_plataforma()
+
         posicionamento_inicial()
         pos_estimada = (0,0)
 
@@ -498,6 +502,7 @@ def dar_meia_volta_linha():
 
 
     orientação_estimada = inverte_orientação()
+    reset_pid_linha()
     LOG(f"dar_meia_volta_linha: {orientação_estimada=}")
 
 #! separar esses ifelses de orientação pra girar_orientação esq e dir que nem inverte_orientação
@@ -684,12 +689,17 @@ def até_dist_max(dist_max):
 
 def até_dist_max_ou_cruzamento(dist_max):
     def func(dist, esq, centro, dir, preto):
+        cruzamento =  até_cruzamento(dist, esq, centro, dir, preto)
+        return cruzamento or dist >= dist_max
+    return func
+'''def até_dist_max_ou_cruzamento(dist_max):
+    def func(dist, esq, centro, dir, preto):
         return (
             até_cruzamento(dist, esq, centro, dir, preto) or
             até_dist_max(dist_max)(dist, esq, centro, dir, preto)
         )
     return func
-
+'''
 def dar_ré_linha(dist, **kwargs):
     seguir_linha_até(até_dist_max(dist), vel=-70, **kwargs) #! vel hardcoded
 
@@ -778,9 +788,15 @@ def pid(kp, kd=0, ki=0):
         erro_ant = erro
         ierro   += erro
         return ativ
-    return f
 
-pid_linha = pid(kp=0.50)
+    def reset():
+        nonlocal ierro, erro_ant
+        ierro = erro_ant = 0
+
+    return f, reset
+
+pid_linha, reset_pid_linha = pid(kp=0.5, kd= 0.7)
+
 def seguir_linha_até(parada=até_dist_max_ou_cruzamento(TAM_PISTA_TODA),
                      *, vel=None, pid=None, parar_no_verde=False, caçamba=False):
     if vel is None: vel = VEL_SEGUIR_LINHA
@@ -799,9 +815,17 @@ def seguir_linha_até(parada=até_dist_max_ou_cruzamento(TAM_PISTA_TODA),
         else:
             erro = dir_linha.mul * (REFL_IDEAL - centro)
 
-        rodas.drive(vel, pid(erro))
-
-        if parada(rodas.distance(), esq, centro, dir, preto): break
+        if vel > 0:
+            vel_atual = min(vel, max(VEL_MIN_SEGUIR_LINHA, vel - K_VEL*abs(erro)))
+        else:
+            vel_atual = vel
+        rodas.drive(vel_atual, pid(erro))
+        
+        dist = rodas.distance()
+        cruzamento = preto(esq) and preto(dir)
+        if parada(dist, esq, centro, dir, preto):
+            LOG(f"PAROU dist={dist:.1f} esq={esq} centro={centro} dir={dir} cruzamento={cruzamento}")
+            break
         if parar_no_verde: #! isso era o erro do bipe eterno, ver se precisa
             esq, dir = cores.todas(sensor_cor_esq, sensor_cor_dir)
             if esq == Cor.enum.VERDE    and dir == Cor.enum.VERDE: break
@@ -820,11 +844,13 @@ def curva_linha_esquerda():
     dir_linha.mul = dir_linha.DIR
     rodas.curve(DIST_EIXO_SENSOR, -90)
     girar_orientação(-1)
+    reset_pid_linha()
 
 def curva_linha_direita():
     dir_linha.mul = dir_linha.ESQ
     rodas.curve(DIST_EIXO_SENSOR, +90)
     girar_orientação(+1)
+    reset_pid_linha()
 
 def virar_esquerda_linha():
     alinhar_eixo_cruzamento()
@@ -1341,6 +1367,29 @@ def procura(pos_estimada, cores_caçambas):
 
         if cor == Cor.NENHUMA: continue
         if cel_atual == (y0,x0): continue
+
+        # vê se tem alguma coisa na frente
+        andar_dist_linha(DIST_CRUZAMENTO_CUBO)
+
+        cor = blt.ver_cor_cubo()
+        blt.mostrar_cor(cor)
+        if cor == Cor.enum.BRANCO:
+            bipes.cabeca()
+        if cor == Cor.enum.NENHUMA:
+            LOG("procura: cel livre viu cor.NENHUMA*")
+            tira_obstaculo(cel_destino)
+            achar_cruzamento_linha(dist_max=TAM_QUARTEIRÃO)
+            cel_atual = cel_destino
+            blt.abrir_garra()
+            continue
+        if ((cor not in cores_caçambas) or
+            (cubos_caçambas[cores_caçambas.index(cor)] >= NUM_CUBOS_PEGÁVEIS)):
+            LOG(f"procura: cubo desconhecido cor {cor}")
+            coloca_obstaculo(cel_destino)
+            dar_ré(DIST_VOLTAR_CUBO) #!
+            blt.abrir_garra()
+            dar_ré(DIST_CRUZAMENTO_CUBO)
+            continue
 
         imprimir_mapa()
 
