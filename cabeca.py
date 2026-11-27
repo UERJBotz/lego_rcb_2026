@@ -1237,7 +1237,25 @@ def verificar_aresta(dist_cubo_perto=TAM_BLOCO, dist_max=TAM_QUARTEIRÃO, dist_m
     if dist <= dist_cubo_perto:
         # tem cubo e precisamos ver a cor
         andar_dist_linha(dist)
+        cores_vistas = []
+        for i in range(50):
         cor = blt.ver_cor_cubo()
+        
+        cor_atual = 0
+        moda = 0
+        cor_moda = Cor.NENHUMA
+        for i in cores_vistas:
+            for j in cores_vistas:
+                if cores_vistas[i] == cores_vistas[j]:
+                    cor_atual += 1
+            
+            if cor_atual > moda:
+                cor_moda = cores_vistas[i]
+            while cores_vistas[i] in cores_vistas
+
+        cor = cor_moda
+            
+
         if cor == Cor.NENHUMA:
             # leitura falsa de distância ou cor errada ou viu inimigo
             LOG("verificar_aresta: cel livre viu cor.NENHUMA*")
