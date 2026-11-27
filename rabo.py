@@ -12,8 +12,9 @@ from lib.polyfill import Enum
 from comum import globais, coringa
 from comum import LOG, ERRO, ASSERT
 
-ANG_GARRA_FECHADA = 90
-ANG_GARRA_ABERTA  = 0
+ANG_GARRA_FECHADA    = 90
+ANG_GARRA_SEMIABERTA = 60
+ANG_GARRA_ABERTA     = 0
 
 #! from cores import cor as Cor
 Cor = Enum("Cor", ["NENHUMA",
@@ -151,10 +152,10 @@ def setup():
     LOG(f"-> i2c: caçamba{i2c_caçamba.scan()},",
                    f"cubo{i2c_cubo.scan()}")
 
-    servo_garra, *_ = servos = [
-        Servo(Pin(17)), Servo(Pin(18))
+    servo_garra, servo_cinza = servos = [
+        Servo(Pin(17)), Servo(Pin(18), min_pulse=1000, max_pulse=2000)
     ]
-    servo_garra.angle(ANG_GARRA_ABERTA, wait=200)
+    for s in servos: s.angle(ANG_GARRA_ABERTA, wait=200)
     for s in servos: s.off()
 
     barra_led = NeoPixel(Pin(5), 12)
@@ -208,6 +209,9 @@ def main(hub):
         elif comando == blt.cmd.abre_garra:
             servo_garra.angle(ANG_GARRA_ABERTA)
             blt.enviar_resposta(blt.rsp.abri)
+        elif comando == blt.cmd.abre_meia_garra:
+            servo_garra.angle(ANG_GARRA_SEMIABERTA)
+            blt.enviar_resposta(blt.rsp.abri_meia_garra)
         elif comando == blt.cmd.mostrar_cor:
             cor, = args
             barra_led.fill(cor_to_rgb(cor))
@@ -220,7 +224,7 @@ def main(hub):
                 barra_led_cor(i-2, cor)
                 LOG(f"mostrando caçamba {i} com cor {Cor(cor)}")
             blt.enviar_resposta(blt.rsp.mostrei_caçambas)
-        
+
         elif comando == blt.cmd.mostra_cubos:
             cores = args
             for i, cor in enumerate(cores):

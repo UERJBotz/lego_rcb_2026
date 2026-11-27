@@ -1222,8 +1222,9 @@ def pegar_cubo_da_plataforma():
 def soltar_cubo_em_cima_caçamba():
     LOG(f"soltar_cubo_em_cima_caçamba: garra")
     blt.mediar_garra()
-    blt.abrir_garra()
+    blt.abrir_meia_garra()
     blt.levantar_garra()
+    blt.abrir_garra()
 
     cores_cubos_pegos[1] = Cor.NENHUMA
 
