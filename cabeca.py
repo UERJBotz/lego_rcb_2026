@@ -1212,6 +1212,8 @@ def verificar_aresta(dist_cubo_perto=TAM_BLOCO, dist_max=TAM_QUARTEIRÃO, dist_m
                 LOG(f"verificar_aresta: viu cor.{Cor(cor)}")
                 blt.abaixar_garra()
                 blt.fechar_garra()
+                cor = blt.ver_cor_cubo()
+                LOG(f"verificar_aresta: substituindo por cor.{Cor(cor)}")
                 blt.levantar_garra()
                 blt.estender_plataforma()
                 blt.mediar_garra()
