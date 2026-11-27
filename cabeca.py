@@ -1199,10 +1199,10 @@ def pegar_cubo(cor):
         cor = segurar_cubo(cor)
         LOG(f"pegar_cubo: substituindo por cor.{Cor(cor)}")
         blt.levantar_garra()
-        blt.estender_plataforma()
-        blt.mediar_garra()
-        blt.abrir_garra()
-        blt.fechar_garra()
+        #blt.estender_plataforma()
+        #blt.mediar_garra()
+        #blt.abrir_garra()
+        #blt.fechar_garra()
         blt.mostrar_cubos(cores_cubos_pegos)
 
 def pegar_cubo_da_plataforma():
