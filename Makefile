@@ -7,24 +7,27 @@ AMPY     = .venv/bin/ampy
 NOME_CABECA = "spike1"
 NOME_BRACO  = "spike0"
 
+UPLOAD = $(PYTHON) tools/upload.py
+RUN    = $(PYTHON) tools/run.py
+
 
 .PHONY: all cabeca braco
 all: cabeca braco
 
 #! colocar os outros módulos como dependência
 cabeca: cabeca.py
-	$(PYBRICKS) run ble --name $(NOME_CABECA) $<
+	$(UPLOAD) $(NOME_CABECA) $<
 braco:  braco.py
-	$(PYBRICKS) run ble --name $(NOME_BRACO) $<
+	$(UPLOAD) $(NOME_BRACO) $<
 
 
 .PHONY: imediato cabeca_imediato braco_imediato
 imediato: cabeca_imediato braco_imediato
 
 cabeca_imediato:
-	$(PYTHON) build/run.py $(NOME_CABECA)
+	$(RUN) $(NOME_CABECA)
 braco_imediato:
-	$(PYTHON) build/run.py $(NOME_BRACO)
+	$(RUN) $(NOME_BRACO)
 
 
 .PHONY: teste cabeca_teste braco_teste
@@ -34,14 +37,14 @@ TESTE_BRACO  = "__teste_braco__.py"
 TESTE_CABECA = "__teste_cabeca__.py"
 
 cabeca_teste: $(TESTE_CABECA)
-	$(PYBRICKS) run ble --name $(NOME_CABECA) $<
+	$(UPLOAD) $(NOME_CABECA) $<
 braco_teste:  $(TESTE_BRACO)
-	$(PYBRICKS) run ble --name $(NOME_BRACO) $<
+	$(UPLOAD) $(NOME_BRACO) $<
 
 $(TESTE_CABECA): cabeca.py
-	echo "TESTE = True; DEBUG = True" > $@; cat $< >> $@
+	echo -n "TESTE = DEBUG = True;" > $@; cat $< >> $@
 $(TESTE_BRACO): braco.py
-	echo "TESTE = True; DEBUG = True" > $@; cat $< >> $@
+	echo -n "TESTE = DEBUG = True;" > $@; cat $< >> $@
 
 
 .PHONY: rabo
@@ -65,8 +68,8 @@ rabo:: rabo_monitor
 
 .PHONY: rabo_principais rabo_monitor
 .PHONY: rabo_main rabo_blt rabo_comum rabo_monitor
-rabo_principais:: rabo_main 
-rabo_principais:: rabo_blt 
+rabo_principais:: rabo_main
+rabo_principais:: rabo_blt
 rabo_principais:: rabo_comum
 rabo_main: rabo.py
 	$(AMPY) --port /dev/ttyUSB0 put $< main.py
