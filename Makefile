@@ -10,7 +10,6 @@ NOME_BRACO  = "spike0"
 UPLOAD = $(PYTHON) tools/upload.py
 RUN    = $(PYTHON) tools/run.py
 
-
 .PHONY: all cabeca braco
 all: cabeca braco
 

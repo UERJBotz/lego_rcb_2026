@@ -7,8 +7,8 @@ from pybricks.tools      import wait as delay
 from pybricks.robotics   import DriveBase
 
 from lib.caminhos import achar_movimentos, achar_caminhos, tipo_movimento
-from lib.caminhos import coloca_obstaculo, tira_obstaculo, coloca_obstaculo_incerto
-from lib.caminhos import pegar_celulas_incertas, imprimir_mapa
+from lib.caminhos import coloca_obstaculo, tira_obstaculo, coloca_obstaculo_incerto, visitar
+from lib.caminhos import pegar_celulas_incertas_alcancaveis, imprimir_mapa, custo_caminho
 from lib.caminhos import MAPA_X_MAX, MAPA_Y_MAX
 
 from urandom import choice
@@ -133,6 +133,7 @@ def main():
         blt.retrair_plataforma()
         posicionamento_inicial()
         pos_estimada = (0,0)
+        visitar(pos_estimada)
 
         if not cores_caçambas:
             descobrir_cor_caçambas()
@@ -201,7 +202,7 @@ def main():
             cor, pos_estimada = procura(pos_estimada, cores_caçambas)
             LOG(f"main: tinha cubo 2 {Cor(cor)} na frente de {pos_estimada}") #! usar posição guardada do cubo
 
-            caminho_volta = achar_caminhos(pos_estimada, (0,0))
+            caminho_volta = achar_caminhos(pos_estimada, (0,0), orientação_estimada)
             LOG(f"main: seguindo caminho de volta: {caminho_volta}")
             seguir_caminho(caminho_volta)
             LOG(f"main: pulando o azul")
@@ -260,7 +261,7 @@ def test():
                     (6,6)]:
             tira_obstaculo(obs)
 
-        caminho = achar_caminhos((8,8), (6,6))
+        caminho = achar_caminhos((8,8), (6,6), orientação_estimada)
         seguir_caminho_inclusivo(caminho)
 
     while False:
@@ -1029,8 +1030,9 @@ def seguir_caminho(caminho): #! lidar com outras coisas
     if movs:
         LOG(*(tipo_movimento(mov) for mov in movs))
 
-        for _ in interpretar_caminho(movs):
+        for k, _ in enumerate(interpretar_caminho(movs)):
             while not rodas.done(): pass
+            visitar(caminho[k + 1])
 
         #if na_grade:
         #    LOG("Seguir caminho na grade-acertar_orientação_linha")
@@ -1113,6 +1115,7 @@ def colocar_cubos_nas_caçambas(cores_cubos, max_cubos=NUM_CUBOS_PEGÁVEIS):
 def colocar_cubo_na_caçamba(cor_cubo, max_cubos=NUM_CUBOS_PEGÁVEIS):
     global cubos_caçambas
     AJUSTE_BORDA_CAÇAMBA = 0
+    NUM_CUBOS_BASE = 2
 
     ASSERT(cor_cubo != Cor.enum.NENHUMA)
     blt.levantar_garra()
@@ -1145,7 +1148,7 @@ def colocar_cubo_na_caçamba(cor_cubo, max_cubos=NUM_CUBOS_PEGÁVEIS):
 
             LOG(f"colocar_cubo_na_caçamba: colocando na caçamba {Cor(cor)}")
             desloc_caçamba = (TAM_CAÇAMBA + DIST_CAÇAMBA)*i
-            desloc_cubo    = (TAM_CUBO)*(cubos_caçambas[i]%3)
+            desloc_cubo    = (TAM_CUBO)*(cubos_caçambas[i]%NUM_CUBOS_BASE)
             rodas.straight(desloc_caçamba + desloc_cubo - AJUSTE_BORDA_CAÇAMBA)
             virar_direita()
 
@@ -1197,10 +1200,10 @@ def pegar_cubo(cor):
         cor = segurar_cubo(cor)
         LOG(f"pegar_cubo: substituindo por cor.{Cor(cor)}")
         blt.levantar_garra()
-        blt.estender_plataforma()
-        blt.mediar_garra()
-        blt.abrir_garra()
-        blt.fechar_garra()
+        #blt.estender_plataforma()
+        #blt.mediar_garra()
+        #blt.abrir_garra()
+        #blt.fechar_garra()
         blt.mostrar_cubos(cores_cubos_pegos)
 
 def pegar_cubo_da_plataforma():
@@ -1220,8 +1223,9 @@ def pegar_cubo_da_plataforma():
 def soltar_cubo_em_cima_caçamba():
     LOG(f"soltar_cubo_em_cima_caçamba: garra")
     blt.mediar_garra()
-    blt.abrir_garra()
+    blt.abrir_meia_garra()
     blt.levantar_garra()
+    blt.abrir_garra()
 
     cores_cubos_pegos[1] = Cor.NENHUMA
 
@@ -1314,6 +1318,7 @@ def atravessa_rua_pegando_cubo_ou_nao(aresta, dist_max=TAM_QUARTEIRÃO):
         elif plat: pos_cubos_pegos[0] = aresta_como_pos(aresta)
         LOG(f"atravessa_rua_pegando_cubo_ou_nao: {plat}<->{pos_cubos_pegos[0]}, {garr}<->{pos_cubos_pegos[1]}")
         blt.mostrar_cubos(cores_cubos_pegos)
+        visitar(fim)
         return cor, fim
     else:
         # obstáculo
@@ -1350,45 +1355,45 @@ def partial(func, *args, **kwargs):
 
 #! tá empurrando?
 def procura(pos_estimada, cores_caçambas):
-    ## ordena as células incertas por distância à origem
-    cel_incertas = pegar_celulas_incertas()
     cel_atual = pos_estimada
-
-    caminhos_incertas = {
-        cel: achar_caminhos(cel_atual, cel) for cel in cel_incertas
-    }
-    cel_incertas.sort(key=lambda x: (
-        len(caminhos_incertas[x]) if caminhos_incertas[x] is not None else 9000
-    ))
 
     ## garra
     blt.retrair_plataforma()
     blt.mediar_garra()
     blt.abrir_garra()
 
-    ## passa por cada um das células incertas
-    for cel_destino in cel_incertas:
-        LOG("tentando de", cel_atual, "até :", cel_destino)
+    while True:
+        cel_incertas = pegar_celulas_incertas_alcancaveis(cel_atual)
+        if not cel_incertas:
+            break
 
-        caminho = achar_caminhos(cel_atual, cel_destino)
-        if not caminho:
-            LOG("procura: nenhum caminho encontrado")
-            continue
+        caminhos_incertas = {
+            cel: achar_caminhos(cel_atual, cel, orientação_estimada) for cel in cel_incertas
+        }
+        cel_incertas.sort(
+            key=lambda cel: custo_caminho(caminhos_incertas[cel], orientação_estimada)
+        )
 
-        ## anda até ficar imediatamente antes de procurates da celula destino
-        (y0,x0) = seguir_caminho_inclusivo(caminho)
-        (y1,x1) = cel_destino
-        depois = (y0 + 2*(y1-y0), x0 + 2*(x1-x0))
-        cor, cel_atual = atravessa_rua_pegando_cubo_ou_nao(((y0, x0), depois))
-        LOG(f"procura: Estou em {cel_atual}.")
+        for cel_destino in cel_incertas:
+            LOG("tentando aresta", cel_destino, "a partir de", cel_atual)
 
-        if cor == Cor.NENHUMA: continue
-        if cel_atual == (y0,x0): continue
+            caminho = caminhos_incertas[cel_destino]
+            if not caminho:
+                LOG("procura: nenhum caminho encontrado")
+                continue
 
-        imprimir_mapa()
+            ## anda até ficar imediatamente antes de procurates da celula destino
+            (y0,x0) = seguir_caminho_inclusivo(caminho)
+            (y1,x1) = cel_destino
+            depois = (y0 + 2*(y1-y0), x0 + 2*(x1-x0))
+            LOG("atravessando por", cel_destino, "até cruzamento", depois)
+            cor, cel_atual = atravessa_rua_pegando_cubo_ou_nao(((y0, x0), depois))
+            LOG(f"procura: Estou em {cel_atual}.")
 
-        LOG(f"procura: cubo cor {cor}")
-        return cor, cel_atual
+            if cor == Cor.NENHUMA or cel_atual == (y0,x0): break
+
+            LOG(f"procura: cubo cor {cor}")
+            return cor, cel_atual
 
     imprimir_mapa()
 

@@ -34,6 +34,7 @@ cmd = Enum("cmd", [
     "mostra_caçambas",
     "sacode_plataforma",
     "mostra_cubos",
+    "abre_meia_garra",
 ])
 
 rsp = Enum("rsp", [
@@ -54,6 +55,7 @@ rsp = Enum("rsp", [
     "mostrei_caçambas",
     "sacodi",
     "mostrei_cubos",
+    "abri_meia_garra",
 ])
 
 #! mudar alguns nomes depois
@@ -94,6 +96,10 @@ def fechar_garra():
 def abrir_garra():
     enviar_comando(cmd.abre_garra)
     return esperar_resposta(rsp.abri, canal=TX_RABO, delay=200)
+
+def abrir_meia_garra():
+    enviar_comando(cmd.abre_meia_garra)
+    return esperar_resposta(rsp.abri_meia_garra, canal=TX_RABO, delay=200)
 
 def levantar_garra():
     enviar_comando(cmd.levanta_garra)

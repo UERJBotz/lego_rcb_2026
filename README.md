@@ -1,6 +1,6 @@
-# Carcará Branco / Carrara Táxi Carrara / Renato Sorriso
+# Carcará Branco / Carrara Táxi Carrara / Renato Sorriso / O Garra
 
-Repositório criado para o desafio RCB Challenge da CBR 2025 (antigo SEK).
+Repositório criado para o desafio RCB Challenge da CBR 2026 (antigo SEK).
 
 
 ## Pré-requisitos
@@ -9,12 +9,9 @@ Repositório criado para o desafio RCB Challenge da CBR 2025 (antigo SEK).
 
 Usamos:
 - 2 Hubs SPIKE Prime, da LEGO (com o firmware do pybricks);
-- 1 ESP32C3 supermini (com micropython);
-- 1 Arduino UNO;
+- 1 ESP32 (com micropython);
 
 Outro dispositivo da família esp32 provavelmente funcionaria (provalmente tendo que alterar alguns pinos) contando que tenha suporte a bluetooth low energy (ble).
-Outro dispositivo compatível com arduino provavelmente funcionaria (provalmente tendo que alterar alguns pinos) contando que tenha E/S a 5V.
-
 
 ### Software
 
@@ -34,7 +31,7 @@ No ubuntu:
 sudo apt install make
 ```
 
-Para o código dos spikes, fazemos upload com o pybricksdev, para o esp32 com o ampy, e para o arduino com arduino;
+Para o código dos spikes, fazemos upload com o pybricksdev e para o esp32 com o ampy.
 
 
 ## Configurando o Ambiente
