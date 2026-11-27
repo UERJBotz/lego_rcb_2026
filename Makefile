@@ -59,6 +59,8 @@ rabo:: firmware/vl53l0x.py
 	$(AMPY) --port /dev/ttyUSB0 put $<
 rabo:: firmware/boot.py
 	$(AMPY) --port /dev/ttyUSB0 put $<
+rabo:: firmware/servos.py
+	$(AMPY) --port /dev/ttyUSB0 put $<
 rabo:: firmware/bleradio.py
 	$(AMPY) --port /dev/ttyUSB0 put $<
 rabo:: rabo_monitor
