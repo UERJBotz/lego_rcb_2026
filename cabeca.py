@@ -67,15 +67,12 @@ cubos_caçambas = [0 for i in range(NUM_CAÇAMBAS)]
 cores_caçambas = []
 
 cores_cubos_pegos = [Cor.NENHUMA,Cor.NENHUMA]
-pos_cubos_pegos  = [None, None]
-
+pos_cubos_pegos   = [None, None] #! é assumido que a posição não seja movimentada junto com a cor
 
 #! 2024: checar stall: jogar exceção
 #! 2024: checar cor errada no azul
 
 #! quando sofrer exceção e DEBUG == False, entrar num estado que só espera o reset
-
-#! a procura para(va) no meio quando vê um cubo desconhecido e acha que é catástrofe
 
 #! na varredura, quando vê azul, parar de ir e reclamar do inimigo
 
@@ -214,7 +211,7 @@ def main():
             rodas.straight(DIST_EIXO_SENSOR)
 
             LOG(f"main: indo colocar cubo")
-            colocar_cubos_nas_caçambas(cubos_no_robo)
+            colocar_cubos_nas_caçambas(cores_cubos_pegos)
             dar_ré(DIST_VERDE_CAÇAMBA)
 
 def test():
@@ -1158,7 +1155,7 @@ def colocar_cubo_na_caçamba(cor_cubo, max_cubos=NUM_CUBOS_PEGÁVEIS):
             achar_não_verde_alinhado(max_tentativas=5, virar=False)
 
             LOG(f"colocar_cubo_na_caçamba: indo soltar cubo")
-            [_, garr] = cubos_no_robo
+            [_, garr] = cores_cubos_pegos
             if garr == Cor.NENHUMA:
                 pegar_cubo_da_plataforma()
             rodas.straight(DIST_VERDE_CAÇAMBA)
@@ -1169,11 +1166,13 @@ def colocar_cubo_na_caçamba(cor_cubo, max_cubos=NUM_CUBOS_PEGÁVEIS):
 
     SucessoOuCatástrofe("sem lugar pro cubo nas caçambas")
 
-def segurar_cubo(cor):
+def segurar_cubo(cor=None):
     blt.abaixar_garra()
     blt.fechar_garra()
-    cubos_no_robo[1] = blt.ver_cor_cubo()
-    return cubos_no_robo[1]
+    cor_lida = blt.ver_cor_cubo()
+    if cor is None: cor = cor_lida
+    cores_cubos_pegos[1] = cor
+    return cor_lida
 
 def colocar_cubo_na_plataforma(cor):
     blt.levantar_garra()
@@ -1181,10 +1180,10 @@ def colocar_cubo_na_plataforma(cor):
     blt.mediar_garra()
     blt.abrir_garra()
 
-    cubos_no_robo[0] = cor
+    cores_cubos_pegos[0] = cor
 
 def pegar_cubo(cor):
-    [cubo_plataforma, _] = cubos_no_robo
+    [cubo_plataforma, _] = cores_cubos_pegos
     if cubo_plataforma == Cor.NENHUMA:
         LOG(f"pegar_cubo: primeiro cubo: {Cor(cor)}")
         cor = segurar_cubo(cor)
@@ -1192,13 +1191,13 @@ def pegar_cubo(cor):
         colocar_cubo_na_plataforma(cor)
         blt.levantar_garra()
         blt.sacodir_plataforma()
-        blt.mostrar_cubos(cubos_no_robo)
+        blt.mostrar_cubos(cores_cubos_pegos)
     else:
         LOG(f"pegar_cubo: segundo cubo: {Cor(cor)}")
-        cor = segurar_cubo()
+        cor = segurar_cubo(cor)
         LOG(f"pegar_cubo: substituindo por cor.{Cor(cor)}")
         blt.levantar_garra()
-        blt.mostrar_cubos(cubos_no_robo)
+        blt.mostrar_cubos(cores_cubos_pegos)
 
 def pegar_cubo_da_plataforma():
     LOG(f"pegar_cubo_da_plataforma: retraindo e estendendo plataforma")
@@ -1211,15 +1210,15 @@ def pegar_cubo_da_plataforma():
     LOG(f"pegar_cubo_da_plataforma: retraindo plataforma")
     blt.retrair_plataforma()
 
-    cubos_no_robo[1] = cubos_no_robo[0]
-    cubos_no_robo[0] = Cor.NENHUMA
+    cores_cubos_pegos[1] = cores_cubos_pegos[0]
+    cores_cubos_pegos[0] = Cor.NENHUMA
 
 def soltar_cubo_em_cima_caçamba():
     LOG(f"soltar_cubo_em_cima_caçamba: garra")
     blt.mediar_garra()
     blt.abrir_garra()
 
-    cubos_no_robo[1] = Cor.NENHUMA
+    cores_cubos_pegos[1] = Cor.NENHUMA
 
 def verificar_aresta(dist_cubo_perto=TAM_BLOCO, dist_max=TAM_QUARTEIRÃO, dist_min=DIST_CRUZAMENTO_CUBO//10):
     ## estamos no cruzamento virados pra aresta
@@ -1251,9 +1250,7 @@ def verificar_aresta(dist_cubo_perto=TAM_BLOCO, dist_max=TAM_QUARTEIRÃO, dist_m
             if rejeitado:
                 # cubo impegável
                 andado = rodas.distance()
-                #dar_ré(andado + DIST_EIXO_SENSOR)
                 dar_ré(andado)
-                #alinha_eixo_cruzamento() #! tirar pq todas as funções de depois já fazem
                 LOG(f"verificar_aresta: {andado=}, {dist=}")
                 return False, cor
             else:
@@ -1307,9 +1304,10 @@ def atravessa_rua_pegando_cubo_ou_nao(aresta, dist_max=TAM_QUARTEIRÃO):
     if passa:
         # cubo ou nada
         _tira_obstaculo(aresta)
-        cores_cubos_pegos[0] = cor                   #! Mudar a logica do 0 ao pegar dois cubos.
-        pos_cubos_pegos[0] = aresta_como_pos(aresta) #! Mudar a logica do 0 ao pegar dois cubos.
-        LOG("atravessa_rua_pegando_cubo_ou_nao: {Cor(cores_cubos_pegos[0], pos_cubos_pegos[0]}")
+        [plat, garr] = cores_cubos_pegos
+        if   garr: pos_cubos_pegos[1] = aresta_como_pos(aresta)
+        elif plat: pos_cubos_pegos[0] = aresta_como_pos(aresta)
+        LOG(f"atravessa_rua_pegando_cubo_ou_nao: {plat}<->{pos_cubos_pegos[0]}, {garr}<->{pos_cubos_pegos[1]}")
         blt.mostrar_cubos(cores_cubos_pegos)
         return cor, fim
     else:
@@ -1491,8 +1489,9 @@ if __name__ == "__main__":
 
             LOG("reiniciando")
             for pos, cor in zip(pos_cubos_pegos, cores_cubos_pegos):
-                if cor != Cor.NENHUMA:
-                    coloca_obstaculo_incerto(pos) #!!!!!!!!!!!!!!!!!!
+                #! se assume que a posição não se movimente junto da cor
+                if pos is not None:
+                    coloca_obstaculo_incerto(pos)
                     imprimir_mapa()
 
             hub.system.set_stop_button(Button.CENTER)
