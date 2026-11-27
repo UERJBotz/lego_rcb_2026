@@ -7,8 +7,8 @@ from pybricks.tools      import wait as delay
 from pybricks.robotics   import DriveBase
 
 from lib.caminhos import achar_movimentos, achar_caminhos, tipo_movimento
-from lib.caminhos import coloca_obstaculo, tira_obstaculo, coloca_obstaculo_incerto
-from lib.caminhos import pegar_celulas_incertas, imprimir_mapa
+from lib.caminhos import coloca_obstaculo, tira_obstaculo, coloca_obstaculo_incerto, visitar
+from lib.caminhos import pegar_celulas_incertas_alcancaveis, imprimir_mapa
 from lib.caminhos import MAPA_X_MAX, MAPA_Y_MAX
 
 from urandom import choice
@@ -139,6 +139,7 @@ def main():
         blt.retrair_plataforma()
         posicionamento_inicial()
         pos_estimada = (0,0)
+        visitar(pos_estimada)
 
         if not cores_caçambas:
             descobrir_cor_caçambas()
@@ -205,7 +206,7 @@ def main():
             cor, pos_estimada = procura(pos_estimada, cores_caçambas)
             LOG(f"main: tinha cubo {Cor(cor)} na frente de {pos_estimada}") #! LOG de procura antigo
 
-            caminho_volta = achar_caminhos(pos_estimada, (0,0))
+            caminho_volta = achar_caminhos(pos_estimada, (0,0), orientação_estimada)
             LOG(f"main: seguindo caminho de volta: {caminho_volta}")
             seguir_caminho(caminho_volta)
             LOG(f"main: pulando o azul")
@@ -264,7 +265,7 @@ def test():
                     (6,6)]:
             tira_obstaculo(obs)
 
-        caminho = achar_caminhos((8,8), (6,6))
+        caminho = achar_caminhos((8,8), (6,6), orientação_estimada)
         seguir_caminho_inclusivo(caminho)
 
     while False:
@@ -1035,8 +1036,9 @@ def seguir_caminho(caminho): #! lidar com outras coisas
     if movs:
         LOG(*(tipo_movimento(mov) for mov in movs))
 
-        for _ in interpretar_caminho(movs):
+        for k, _ in enumerate(interpretar_caminho(movs)):
             while not rodas.done(): pass
+            visitar(caminho[k + 1])
 
         #if na_grade:
         #    LOG("Seguir caminho na grade-acertar_orientação_linha")
@@ -1271,6 +1273,7 @@ def atravessa_rua_pegando_cubo_ou_nao(aresta, dist_max=TAM_QUARTEIRÃO):
         pos_cubos_pegos[0] = aresta_como_pos(aresta) #! Mudar a logica do 0 ao pegar dois cubos.
         LOG("atravessa_rua_pegando_cubo_ou_nao: {Cor(cores_cubos_pegos[0], pos_cubos_pegos[0]}")
         blt.mostrar_cubos(cores_cubos_pegos)
+        visitar(fim)
         return cor, fim
     else:
         # obstáculo
@@ -1307,45 +1310,45 @@ def partial(func, *args, **kwargs):
 
 #! tá empurrando?
 def procura(pos_estimada, cores_caçambas):
-    ## ordena as células incertas por distância à origem
-    cel_incertas = pegar_celulas_incertas()
     cel_atual = pos_estimada
-
-    caminhos_incertas = {
-        cel: achar_caminhos(cel_atual, cel) for cel in cel_incertas
-    }
-    cel_incertas.sort(key=lambda x: (
-        len(caminhos_incertas[x]) if caminhos_incertas[x] is not None else 9000
-    ))
 
     ## garra
     blt.retrair_plataforma()
     blt.mediar_garra()
     blt.abrir_garra()
 
-    ## passa por cada um das células incertas
-    for cel_destino in cel_incertas:
-        LOG("tentando de", cel_atual, "até :", cel_destino)
+    while True:
+        cel_incertas = pegar_celulas_incertas_alcancaveis(cel_atual)
+        if not cel_incertas:
+            break
 
-        caminho = achar_caminhos(cel_atual, cel_destino)
-        if not caminho:
-            LOG("procura: nenhum caminho encontrado")
-            continue
+        caminhos_incertas = {
+            cel: achar_caminhos(cel_atual, cel, orientação_estimada) for cel in cel_incertas
+        }
+        cel_incertas.sort(key=lambda x: (
+            len(caminhos_incertas[x]) if caminhos_incertas[x] is not None else 9000
+        ))
 
-        ## anda até ficar imediatamente antes de procurates da celula destino
-        (y0,x0) = seguir_caminho_inclusivo(caminho)
-        (y1,x1) = cel_destino
-        depois = (y0 + 2*(y1-y0), x0 + 2*(x1-x0))
-        cor, cel_atual = atravessa_rua_pegando_cubo_ou_nao(((y0, x0), depois))
-        LOG(f"procura: Estou em {cel_atual}.")
+        for cel_destino in cel_incertas:
+            LOG("tentando de", cel_atual, "até :", cel_destino)
 
-        if cor == Cor.NENHUMA: continue
-        if cel_atual == (y0,x0): continue
+            caminho = caminhos_incertas[cel_destino]
+            if not caminho:
+                LOG("procura: nenhum caminho encontrado")
+                continue
 
-        imprimir_mapa()
+            ## anda até ficar imediatamente antes de procurates da celula destino
+            (y0,x0) = seguir_caminho_inclusivo(caminho)
+            (y1,x1) = cel_destino
+            depois = (y0 + 2*(y1-y0), x0 + 2*(x1-x0))
+            cor, cel_atual = atravessa_rua_pegando_cubo_ou_nao(((y0, x0), depois))
+            LOG(f"procura: Estou em {cel_atual}.")
 
-        LOG(f"procura: cubo cor {cor}")
-        return cor, cel_atual
+            if cor == Cor.NENHUMA: continue
+            if cel_atual == (y0,x0): continue
+
+            LOG(f"procura: cubo cor {cor}")
+            return cor, cel_atual
 
     imprimir_mapa()
 
